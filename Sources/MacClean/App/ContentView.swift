@@ -160,6 +160,17 @@ struct ContentView: View {
     /// created on first visit so launch doesn't run every module's `.task`.
     private var moduleHost: some View {
         ZStack {
+            if ProcessInfo.processInfo.environment["CLEAN1_GALLERY"] != nil {
+                // Developer aid: every shared component on one card.
+                ComponentGallery()
+            } else {
+                modules
+            }
+        }
+    }
+
+    private var modules: some View {
+        ZStack {
             ForEach(SidebarItem.allCases, id: \.self) { item in
                 if visited.contains(item) || item == appState.selectedSidebarItem {
                     let isSelected = item == appState.selectedSidebarItem

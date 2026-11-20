@@ -168,7 +168,7 @@ struct TopBar: View {
             Spacer(minLength: 0)
 
             if let search = content.search {
-                TopBarSearchField(text: search, prompt: content.searchPrompt)
+                Clean1SearchField(text: search, prompt: content.searchPrompt)
             }
             ForEach(content.accessories) { accessory in
                 accessory.view
@@ -185,26 +185,6 @@ struct TopBar: View {
                     .allowsHitTesting(false)
             }
         }
-    }
-}
-
-private struct TopBarSearchField: View {
-    @Binding var text: String
-    let prompt: String
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(TypeScale.tertiaryText)
-            TextField(prompt, text: $text)
-                .textFieldStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(TypeScale.primaryText)
-        }
-        .padding(.horizontal, 8)
-        .frame(width: 180, height: 24)
-        .background(Surface.searchFill, in: RoundedRectangle(cornerRadius: Surface.pillRadius, style: .continuous))
     }
 }
 

@@ -25,33 +25,18 @@ public struct ScanButton: View {
         self.action = action
     }
 
-    // Clean1 primary button (UI_SPEC §2.6): a 72 pt glass circle with a glowing
-    // ring. While scanning, the ring becomes the progress indicator (A8). The
-    // optional subtitle is shown as meta text to the right of the circle, laid
-    // out as an overlay so the circle itself stays centred.
+    /// Optional: while scanning, hovering the ring reads "Stop" and clicking
+    /// it calls this (UI_SPEC §2.6).
+    var onStop: (() -> Void)? = nil
+
+    // Clean1 primary button (UI_SPEC §2.6); see PrimaryButton.
     public var body: some View {
-        Group {
-            if isScanning {
-                PrimaryCircle(label: "\(Int(progress * 100))%", progress: progress, isEnabled: false)
-            } else {
-                Button(action: action) {
-                    PrimaryCircle(label: title, progress: nil, isEnabled: true)
-                }
-                .buttonStyle(PrimaryCircleButtonStyle())
-            }
-        }
-        .overlay(alignment: .leading) {
-            if let subtitle, !isScanning {
-                Text(subtitle)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .fixedSize()
-                    .offset(x: PrimaryCircle.diameter + 14)
-                    .allowsHitTesting(false)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(isScanning ? "\(title), \(Int(progress * 100)) percent" : title)
+        PrimaryButton(
+            label: title,
+            meta: isScanning ? nil : subtitle,
+            progress: isScanning ? progress : nil,
+            onStop: onStop,
+            action: action)
     }
 }
 
@@ -64,6 +49,7 @@ struct PrimaryCircle: View {
     /// nil = idle (full ring with breathing glow); a value = progress ring.
     let progress: Double?
     let isEnabled: Bool
+    var ringColor: Color = PrimaryCircle.ringColor
 
     @State private var glowUp = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -84,15 +70,15 @@ struct PrimaryCircle: View {
                     .stroke(.white.opacity(0.18), lineWidth: 3)
                 Circle()
                     .trim(from: 0, to: max(0.001, progress))
-                    .stroke(Self.ringColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .stroke(ringColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .shadow(color: Self.ringColor.opacity(0.7), radius: 6)
+                    .shadow(color: ringColor.opacity(0.7), radius: 6)
                     .animation(Motion.progress, value: progress)
             } else {
                 // Idle ring with breathing glow (A6).
                 Circle()
-                    .stroke(Self.ringColor.opacity(0.9), lineWidth: 3)
-                    .shadow(color: Self.ringColor.opacity(glowUp ? 0.6 : 0.35), radius: glowUp ? 16 : 12)
+                    .stroke(ringColor.opacity(0.9), lineWidth: 3)
+                    .shadow(color: ringColor.opacity(glowUp ? 0.6 : 0.35), radius: glowUp ? 16 : 12)
             }
 
             Text(label)
