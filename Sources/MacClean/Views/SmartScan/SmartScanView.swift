@@ -55,6 +55,15 @@ struct SmartScanView: View {
         ]
     }
 
+    /// Status button state (UI_SPEC §1.3).
+    private var moduleStage: ModuleStage {
+        switch scanState {
+        case .idle, .empty: .idle
+        case .scanning, .cleaning: .working
+        case .results, .done: .results
+        }
+    }
+
     var body: some View {
         Group {
             switch scanState {
@@ -73,11 +82,8 @@ struct SmartScanView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .toolbar {
-            if moduleIsSelected {
-                ToolbarItem { CleanupPermissionsButton() }
-            }
-        }
+        .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
+        .moduleStage(moduleStage)
         .sheet(isPresented: $showActivityLog) { LogViewerView() }
         // Recompute the selected-size total only when the results or selection
         // actually change, NOT on every body pass. The footer reads

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // Clean1 reskin: visual tokens from UI_SPEC.md (v2) §2 and §10.
@@ -134,6 +135,63 @@ enum CardLayout {
     static let introTextLeading: CGFloat = 0.31     // × W
     static let introTextMaxWidth: CGFloat = 0.30    // × W
     static let trafficLightInset = CGPoint(x: 18, y: 16)
+    static let contentLeadingGap: CGFloat = 24      // after the sidebar
+    static let contentTrailingInset: CGFloat = 28
+    static let statusButtonInset: CGFloat = 16
+
+    /// Transparent room around the card for its shadow (UI_SPEC §1.1). The
+    /// sidebar overhang is added on the left on top of this.
+    static let windowMargins = NSEdgeInsets(top: 16, left: 18, bottom: 38, right: 26)
+
+    static var cardRadius: CGFloat {
+        if #available(macOS 26, *) { 16 } else { 12 }
+    }
+
+    /// Window size for a given card size.
+    static func windowSize(forCard card: CGSize) -> CGSize {
+        CGSize(width: card.width + sidebarOverhang + windowMargins.left + windowMargins.right,
+               height: card.height + windowMargins.top + windowMargins.bottom)
+    }
+}
+
+/// Where everything sits for a given window size (UI_SPEC §1.1, §1.2). In
+/// full screen the margins and overhang go away and the sidebar tucks inside.
+struct ShellMetrics {
+    let card: CGRect
+    let sidebar: CGRect
+    /// Module area, in card coordinates.
+    let content: CGRect
+    let cardRadius: CGFloat
+    let isFullScreen: Bool
+
+    init(windowSize size: CGSize, isFullScreen: Bool) {
+        self.isFullScreen = isFullScreen
+        let margins = isFullScreen ? NSEdgeInsets() : CardLayout.windowMargins
+        let overhang = isFullScreen ? 0 : CardLayout.sidebarOverhang
+        card = CGRect(
+            x: margins.left + overhang,
+            y: margins.top,
+            width: max(0, size.width - margins.left - overhang - margins.right),
+            height: max(0, size.height - margins.top - margins.bottom))
+        let sidebarX = isFullScreen ? card.minX + 12 : card.minX - overhang
+        sidebar = CGRect(
+            x: sidebarX,
+            y: card.minY + CardLayout.sidebarTopInset,
+            width: CardLayout.sidebarWidth,
+            height: max(0, card.height - CardLayout.sidebarTopInset - CardLayout.sidebarBottomInset))
+        let contentX = sidebar.maxX - card.minX + CardLayout.contentLeadingGap
+        content = CGRect(
+            x: contentX,
+            y: CardLayout.topBarHeight,
+            width: max(0, card.width - contentX - CardLayout.contentTrailingInset),
+            height: max(0, card.height - CardLayout.topBarHeight))
+        cardRadius = isFullScreen ? 0 : CardLayout.cardRadius
+    }
+
+    /// Close button's top-left, from the window's top-left.
+    var trafficLightOrigin: CGPoint {
+        CGPoint(x: card.minX + CardLayout.trafficLightInset.x, y: card.minY + CardLayout.trafficLightInset.y)
+    }
 }
 
 /// A small tiling grain texture laid over the gradients at low opacity so they

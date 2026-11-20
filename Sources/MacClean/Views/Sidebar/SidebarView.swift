@@ -197,15 +197,13 @@ public struct SidebarView: View {
                 }
             }
             .listStyle(.sidebar)
+            // Clean1: the shell draws the floating panel behind the list.
+            .scrollContentBackground(.hidden)
 
             Divider().opacity(0.4)
 
             settingsFooter
         }
-        .frame(
-            minWidth: AppLanguage.current.resolved == .de ? 250 : 180,
-            idealWidth: AppLanguage.current.resolved == .de ? 260 : 200
-        )
     }
 
     /// A collapsible section header: always-visible leading chevron + title;

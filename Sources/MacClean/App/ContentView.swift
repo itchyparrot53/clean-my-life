@@ -17,71 +17,31 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     /// Right-to-left applies inside the sidebar and the module panes, not to
-    /// the NavigationSplitView itself: its AppKit split view always lays out
-    /// left to right, and a mirrored SwiftUI frame on top of it pushed the
-    /// sidebar out of the window once the window was resized.
+    /// the shell: the sidebar always floats over the card's left edge.
     private var contentDirection: LayoutDirection {
         AppLanguage.current.isRightToLeft ? .rightToLeft : .leftToRight
     }
 
+    @State private var isFullScreen = false
+
     var body: some View {
-        @Bindable var state = appState
-
-        NavigationSplitView {
-            SidebarView(selection: $state.selectedSidebarItem)
-                // The sidebar is the app's primary navigation and is always
-                // shown, so the toolbar's collapse-sidebar button is just
-                // dead weight (#21.4). Remove it.
-                .toolbar(removing: .sidebarToggle)
-                .environment(\.layoutDirection, contentDirection)
-        } detail: {
-            ZStack {
-                if let item = appState.selectedSidebarItem {
-                    // Clean1: per-module gradient with crossfade (UI_SPEC §2.1, A1).
-                    ModuleBackdrop(item: item)
-                        .ignoresSafeArea()
-                }
-
-                // Keep every visited module view alive across tab switches:
-                // show the selected one, hide (don't tear down) the rest.
-                ForEach(SidebarItem.allCases, id: \.self) { item in
-                    // Render if currently selected (so the first frame is never
-                    // blank) or previously visited (kept alive in the background).
-                    if visited.contains(item) || item == appState.selectedSidebarItem {
-                        let isSelected = item == appState.selectedSidebarItem
-                        moduleView(for: item)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .opacity(isSelected ? 1 : 0)
-                            .allowsHitTesting(isSelected)
-                            .accessibilityHidden(!isSelected)
-                            .environment(\.moduleIsSelected, isSelected)
-                    }
-                }
-
-                if appState.selectedSidebarItem == nil {
-                    Text(L10n.tr("请从侧边栏选择一个模块", "Select a module from the sidebar", "Выберите модуль на боковой панели"))
-                        .foregroundStyle(.secondary)
-                }
-
-                // Centered title, drawn as plain content in the title bar
-                // region. Not a ToolbarItem: macOS 26 wraps toolbar items in
-                // a Liquid Glass capsule we don't want, and the unified
-                // toolbar pins its own title to the leading edge (system
-                // title hidden via TitleBarConfigurator; the window keeps
-                // its real title for Mission Control/VoiceOver).
-                VStack {
-                    Text(MCConstants.appName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary.opacity(0.92))
-                        .padding(.top, 16)
-                    Spacer()
-                }
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
+        GeometryReader { proxy in
+            let metrics = ShellMetrics(windowSize: proxy.size, isFullScreen: isFullScreen)
+            ZStack(alignment: .topLeading) {
+                if !metrics.isFullScreen { ResizeEdgeBand() }
+                card(metrics)
+                sidebarPanel(metrics)
             }
-            .toolbarBackground(.hidden, for: .windowToolbar)
-            .environment(\.layoutDirection, contentDirection)
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+            .background(
+                WindowConfigurator(
+                    trafficLightOrigin: metrics.trafficLightOrigin,
+                    interactiveRects: [metrics.card, metrics.sidebar],
+                    onFullScreenChange: { value in
+                        withAnimation(.easeInOut(duration: 0.25)) { isFullScreen = value }
+                    }))
         }
+        .ignoresSafeArea()
         // Clean1: the app is always "on colour" with white text (UI_SPEC §2.1).
         .preferredColorScheme(.dark)
         .disabled(selfUpdater.isPreparingInstallation)
@@ -93,13 +53,6 @@ struct ContentView: View {
                 .environment(\.layoutDirection, contentDirection)
             }
         }
-        .background(TitleBarConfigurator())
-        // Empty: the system-drawn title pins to the leading edge and on
-        // macOS 26 ignores titleVisibility re-asserts while SwiftUI owns a
-        // non-empty title. The visible (centered) title is drawn by the
-        // detail-pane overlay; the real NSWindow.title is set by
-        // TitleBarConfigurator so Mission Control/VoiceOver keep the name.
-        .navigationTitle("")
         // Mark the current selection visited (runs initially too) so its view
         // is created on first visit and then retained.
         .onChange(of: appState.selectedSidebarItem, initial: true) { _, newValue in
@@ -157,36 +110,80 @@ struct ContentView: View {
         }
     }
 
-    /// Hides the system-drawn window title once the view lands in a window.
-    /// The title string itself stays set (Mission Control, App Exposé, and
-    /// VoiceOver still read it); only the toolbar's leading-edge rendering
-    /// is suppressed, replaced by the centered principal toolbar item above.
-    private struct TitleBarConfigurator: NSViewRepresentable {
-        func makeNSView(context: Context) -> NSView { ConfiguringView() }
+    // MARK: Shell (UI_SPEC §1.1)
 
-        // Re-assert on every SwiftUI update. SwiftUI's navigationTitle is
-        // empty (it kept drawing a leading-edge title on macOS 26), so the
-        // real window title lives here: Mission Control, App Exposé, the
-        // Window menu, and VoiceOver read NSWindow.title; titleVisibility
-        // keeps it out of the toolbar where the overlay draws instead.
-        static func apply(to window: NSWindow?) {
-            guard let window else { return }
-            window.title = MCConstants.appName
-            window.titleVisibility = .hidden
+    private var currentItem: SidebarItem { appState.selectedSidebarItem ?? .smartScan }
+
+    /// The gradient card: backdrop, drag area, module host and top bar.
+    private func card(_ metrics: ShellMetrics) -> some View {
+        let shape = RoundedRectangle(cornerRadius: metrics.cardRadius, style: .continuous)
+        return ZStack(alignment: .topLeading) {
+            ModuleBackdrop(item: currentItem)
+            WindowDragArea()
+            moduleHost
+                .frame(width: metrics.content.width, height: metrics.content.height)
+                .offset(x: metrics.content.minX, y: metrics.content.minY)
+                .environment(\.layoutDirection, contentDirection)
         }
-
-        func updateNSView(_ nsView: NSView, context: Context) {
-            DispatchQueue.main.async { [weak nsView] in
-                Self.apply(to: nsView?.window)
-            }
+        .frame(width: metrics.card.width, height: metrics.card.height, alignment: .topLeading)
+        .overlayPreferenceValue(TopBarPreferenceKey.self) { content in
+            TopBar(item: currentItem, content: content)
+                .padding(.leading, metrics.content.minX)
+                .padding(.trailing, CardLayout.statusButtonInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .environment(\.layoutDirection, contentDirection)
         }
+        .clipShape(shape)
+        .background(
+            shape
+                .fill(currentItem.palette.bottom)
+                .shadow(color: .black.opacity(metrics.isFullScreen ? 0 : 0.35), radius: 30, y: 14))
+        .offset(x: metrics.card.minX, y: metrics.card.minY)
+    }
 
-        private final class ConfiguringView: NSView {
-            override func viewDidMoveToWindow() {
-                super.viewDidMoveToWindow()
-                DispatchQueue.main.async { [weak self] in
-                    TitleBarConfigurator.apply(to: self?.window)
+    /// The sidebar, floating over the card's left edge.
+    private func sidebarPanel(_ metrics: ShellMetrics) -> some View {
+        @Bindable var state = appState
+        let shape = RoundedRectangle(cornerRadius: Surface.sidebarRadius, style: .continuous)
+        return SidebarView(selection: $state.selectedSidebarItem)
+            .environment(\.layoutDirection, contentDirection)
+            .frame(width: metrics.sidebar.width, height: metrics.sidebar.height)
+            .background {
+                ZStack {
+                    shape.fill(.ultraThinMaterial)
+                    shape.fill(Surface.sidebarFill)
                 }
+            }
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(Surface.sidebarStroke, lineWidth: 1))
+            .shadow(color: .black.opacity(0.28), radius: 16, y: 6)
+            .offset(x: metrics.sidebar.minX, y: metrics.sidebar.minY)
+    }
+
+    /// Every visited module stays alive (hidden, not torn down) so scans keep
+    /// running and big result lists don't re-render on each switch. Views are
+    /// created on first visit so launch doesn't run every module's `.task`.
+    private var moduleHost: some View {
+        ZStack {
+            ForEach(SidebarItem.allCases, id: \.self) { item in
+                if visited.contains(item) || item == appState.selectedSidebarItem {
+                    let isSelected = item == appState.selectedSidebarItem
+                    moduleView(for: item)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .opacity(isSelected ? 1 : 0)
+                        .allowsHitTesting(isSelected)
+                        .accessibilityHidden(!isSelected)
+                        .environment(\.moduleIsSelected, isSelected)
+                        // Only the visible module talks to the top bar.
+                        .transformPreference(TopBarPreferenceKey.self) { value in
+                            if !isSelected { value = TopBarContent() }
+                        }
+                }
+            }
+
+            if appState.selectedSidebarItem == nil {
+                Text(L10n.tr("请从侧边栏选择一个模块", "Select a module from the sidebar", "Выберите модуль на боковой панели"))
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -241,5 +238,17 @@ struct ContentView: View {
         case .settings:
             SettingsPageView()
         }
+    }
+}
+
+/// A near-invisible band along the window's edges. Fully transparent pixels
+/// pass clicks through to whatever is behind the window, which would also
+/// make the resize edges ungrabbable; this keeps a thin strip catchable while
+/// the rest of the margin stays click-through (UI_SPEC §1.1).
+private struct ResizeEdgeBand: View {
+    var body: some View {
+        Rectangle()
+            .strokeBorder(Color.black.opacity(0.012), lineWidth: 6)
+            .allowsHitTesting(false)
     }
 }

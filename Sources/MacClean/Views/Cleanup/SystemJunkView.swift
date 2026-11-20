@@ -9,6 +9,16 @@ struct SystemJunkView: View {
     @State private var showLargeSelectionConfirm = false
     @State private var showActivityLog = false
 
+    /// Status button state (UI_SPEC §1.3).
+    private var moduleStage: ModuleStage {
+        switch viewModel.state {
+        case .idle, .empty: .idle
+        case .scanning, .cleaning: .working
+        case .results, .done:
+            viewModel.isScanComplete && !viewModel.permissionDeniedPaths.isEmpty ? .attention : .results
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isScanComplete && !viewModel.permissionDeniedPaths.isEmpty {
@@ -32,11 +42,8 @@ struct SystemJunkView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .toolbar {
-            if moduleIsSelected {
-                ToolbarItem { CleanupPermissionsButton() }
-            }
-        }
+        .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
+        .moduleStage(moduleStage)
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .systemJunk) {
                 viewModel.restore(results: e.results, selection: e.selection, scanComplete: e.scanComplete, permissionDeniedPaths: e.permissionDeniedPaths)

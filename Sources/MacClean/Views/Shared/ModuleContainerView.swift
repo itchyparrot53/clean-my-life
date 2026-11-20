@@ -116,6 +116,15 @@ struct ModuleContainerView: View {
         ByteCountFormatter.string(fromByteCount: Int64(totalSelected), countStyle: .file)
     }
 
+    /// Status button state (UI_SPEC §1.3).
+    private var moduleStage: ModuleStage {
+        if completion != nil { return .results }
+        if cleaning != nil || isScanning { return .working }
+        if !results.isEmpty { return .results }
+        if scanComplete && permissionDenied { return .attention }
+        return .idle
+    }
+
     var body: some View {
         Group {
             if let completion {
@@ -137,6 +146,7 @@ struct ModuleContainerView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .moduleStage(moduleStage)
         .respondsToModuleShortcuts(
             onScan: onScan,
             onClean: onClean,

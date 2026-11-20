@@ -32,7 +32,10 @@ struct MacCleanApp: App {
                 .environment(appState)
                 .environment(\.locale, Locale(identifier: appLanguage.localeIdentifier))
                 .id(appLanguage.rawValue)
-                .frame(minWidth: 800, minHeight: 550)
+                // Clean1: the window is the card plus transparent room for the
+                // sidebar overhang and shadows (UI_SPEC §1.2).
+                .frame(minWidth: CardLayout.windowSize(forCard: CardLayout.minimumCard).width,
+                       minHeight: CardLayout.windowSize(forCard: CardLayout.minimumCard).height)
                 .sheet(isPresented: $showOnboarding) {
                     OnboardingView(isPresented: $showOnboarding)
                         .environment(\.locale, Locale(identifier: appLanguage.localeIdentifier))
@@ -57,8 +60,8 @@ struct MacCleanApp: App {
                     appState.selectedSidebarItem = item
                 }
         }
-        .windowStyle(.titleBar)
-        .defaultSize(width: 960, height: 620)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(CardLayout.windowSize(forCard: CardLayout.defaultCard))
         // Keep the standard "Settings…" menu item + Cmd-comma, but route
         // them to the in-app page (the separate Settings window is gone).
         .commands {
