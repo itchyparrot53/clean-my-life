@@ -122,6 +122,7 @@ struct ContentView: View {
             ModuleBackdrop(item: currentItem)
             WindowDragArea()
             moduleHost
+                .environment(\.cardGeometry, CardGeometry(card: metrics.card.size, content: metrics.content))
                 .frame(width: metrics.content.width, height: metrics.content.height)
                 .offset(x: metrics.content.minX, y: metrics.content.minY)
                 .environment(\.layoutDirection, contentDirection)
@@ -180,6 +181,7 @@ struct ContentView: View {
                         .allowsHitTesting(isSelected)
                         .accessibilityHidden(!isSelected)
                         .environment(\.moduleIsSelected, isSelected)
+                        .environment(\.currentModule, item)
                         // Every mounted module keeps its sidebar badge current.
                         .onPreferenceChange(ModuleStatusKey.self) { [store = sidebarStatus] status in
                             Task { @MainActor in store.set(status, for: item) }

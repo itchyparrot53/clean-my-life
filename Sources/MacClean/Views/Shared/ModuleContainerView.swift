@@ -132,35 +132,163 @@ struct ModuleContainerView: View {
         return total > 0 ? .size(total) : nil
     }
 
+    @Environment(\.currentModule) private var module
+    @Namespace private var morph
+    @State private var showReview = false
+
+    private var intro: ModuleIntro { (module ?? .systemJunk).intro }
+    private var palette: ModulePalette { module?.palette ?? theme.palette }
+
+    /// Which template is showing; drives the A11 morph.
+    private var stateKey: String {
+        if completion != nil { return "done" }
+        if cleaning != nil { return "cleaning" }
+        if isScanning { return "scanning" }
+        if !results.isEmpty { return showReview ? "review" : "results" }
+        if scanComplete { return permissionDenied ? "permission" : "empty" }
+        return "intro"
+    }
+
     var body: some View {
-        Group {
-            if let completion {
-                doneView(summary: completion)
-            } else if let cleaning {
-                cleaningView(progress: cleaning)
-            } else if isScanning {
-                scanningView
-            } else if !results.isEmpty {
-                resultsView
-            } else if scanComplete {
-                if permissionDenied {
-                    permissionDeniedView
-                } else {
-                    emptyResultsView
-                }
-            } else {
-                idleView
-            }
+        ZStack {
+            content
+                .id(stateKey)
+                .transition(TemplateMotion.stateTransition)
         }
+        .animation(TemplateMotion.morph, value: stateKey)
+        .environment(\.templateNamespace, morph)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .moduleStage(moduleStage)
         .sidebarBadge(sidebarBadge)
+        .topBarTitle(showReview && !results.isEmpty ? title : nil)
+        .onChange(of: results.isEmpty) { _, empty in if empty { showReview = false } }
+        .alert(
+            L10n.tr("清理 \(selectedCount.formatted()) 项？", "Clean \(selectedCount.formatted()) items?", "Очистить \(selectedCount.formatted()) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов"))?"),
+            isPresented: $showLargeSelectionConfirm
+        ) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
+            Button(L10n.tr("继续", "Continue", "Продолжить"), role: .destructive) { onClean() }
+        } message: {
+            Text(L10n.tr("约 \(formattedSelectedSize) 数据，可能需要几分钟。清理过程中可以取消。", "That's about \(formattedSelectedSize) of data and may take several minutes. You can cancel mid-cleanup.", "Объём данных — около \(formattedSelectedSize). Операция может занять несколько минут, но её можно отменить."))
+        }
+        // Trash Bins empties ~/.Trash permanently — there is no recovery,
+        // so this confirmation fires on every Empty regardless of count.
+        .alert(
+            L10n.tr("清空废纸篓？", "Empty the Trash?", "Очистить Корзину?"),
+            isPresented: $showEmptyTrashConfirm
+        ) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
+            Button(L10n.tr("清空废纸篓", "Empty Trash", "Очистить Корзину"), role: .destructive) { onClean() }
+        } message: {
+            Text(L10n.tr("这会永久删除 \(selectedCount.formatted()) 项（\(formattedSelectedSize)），且无法撤销。", "This permanently deletes \(selectedCount.formatted()) item\(selectedCount == 1 ? "" : "s") (\(formattedSelectedSize)) and cannot be undone.", "Безвозвратное удаление: \(selectedCount.formatted()) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов")) (\(formattedSelectedSize)). Отменить это действие нельзя."))
+        }
+        .sheet(isPresented: $showActivityLog) { LogViewerView() }
         .respondsToModuleShortcuts(
             onScan: onScan,
-            onClean: onClean,
+            onClean: requestClean,
             canScan: cleaning == nil && !isScanning && completion == nil,
             canClean: cleaning == nil && completion == nil && !results.isEmpty && selectedCount > 0
         )
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let completion {
+            doneView(summary: completion)
+        } else if let cleaning {
+            ScanningTemplate(
+                title: L10n.tr("正在清理…", "Cleaning…", "Очистка…"),
+                intro: intro, palette: palette,
+                path: cleaning.totalItems > 0
+                    ? L10n.tr("已处理 \(cleaning.processedItems.formatted()) / \(cleaning.totalItems.formatted()) 项", "\(cleaning.processedItems.formatted()) of \(cleaning.totalItems.formatted()) items", "Обработано \(cleaning.processedItems.formatted()) из \(cleaning.totalItems.formatted())")
+                    : L10n.tr("正在开始清理...", "Starting cleanup...", "Подготовка к очистке..."),
+                progress: cleaning.fraction,
+                onStop: onCancelClean)
+        } else if isScanning {
+            ScanningTemplate(intro: intro, palette: palette, path: scanPhase, progress: scanProgress)
+        } else if !results.isEmpty {
+            if showReview {
+                ReviewTemplate(
+                    results: results, selectedItems: $selectedItems, palette: palette,
+                    customContent: resultsContent,
+                    actionLabel: actionLabel ?? L10n.tr("清理", "Clean", "Очистить"),
+                    onBack: { showReview = false },
+                    onAct: requestClean)
+            } else {
+                ResultsTemplate(
+                    intro: intro, palette: palette, selectedBytes: totalSelected,
+                    actionLabel: actionLabel ?? L10n.tr("清理", "Clean", "Очистить"),
+                    canAct: selectedCount > 0,
+                    onReview: { showReview = true },
+                    onAct: requestClean)
+            }
+        } else if scanComplete {
+            if permissionDenied {
+                PermissionCard(palette: palette, onOpenSettings: onGrantAccess, onRescan: onScan, onDone: onReset)
+            } else {
+                EmptyTemplate(title: emptyMessage, intro: intro, palette: palette, onDone: onReset)
+            }
+        } else {
+            IntroTemplate(title: title, intro: intro, palette: palette, onPrimary: onScan)
+        }
+    }
+
+    /// Clean, with Mac Sai's confirmations: Trash Bins always asks (it's
+    /// permanent); big selections ask too.
+    private func requestClean() {
+        guard selectedCount > 0 else { return }
+        if confirmEmptyTrash {
+            showEmptyTrashConfirm = true
+        } else if selectedCount > MCConstants.cleanConfirmationThreshold {
+            showLargeSelectionConfirm = true
+        } else {
+            onClean()
+        }
+    }
+
+    /// Three honest end-states: nothing selected, nothing removed, or the
+    /// normal "N GB cleaned up". Each says what happened.
+    @ViewBuilder
+    private func doneView(summary: CleanSummary) -> some View {
+        if summary.selectedCount == 0 {
+            DoneTemplate(
+                title: L10n.tr("未选择任何项目", "Nothing was selected", "Ничего не выбрано"),
+                subtitle: L10n.tr("请重新扫描，勾选要移除的项目，然后点击“清理”。", "Re-run the scan, check the items you want to remove, then click Clean.", "Повторите сканирование, отметьте объекты для удаления и нажмите «Очистить»."),
+                palette: palette, isWarning: true, onDone: onReset)
+        } else if summary.removedCount == 0 {
+            DoneTemplate(
+                title: L10n.tr("\(summary.selectedCount) 项无法清理", "\(summary.selectedCount) item\(summary.selectedCount == 1 ? "" : "s") couldn't be cleaned", "Не удалось очистить \(summary.selectedCount) \(L10n.russianPlural(summary.selectedCount, one: "объект", few: "объекта", many: "объектов"))"),
+                palette: palette, isWarning: true,
+                extra: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        cleanErrorDetail(for: summary)
+                        viewLogButton
+                    }
+                },
+                onDone: onReset)
+        } else {
+            DoneTemplate(
+                title: L10n.tr("已清理 \(FileSizeFormatter.format(summary.freedBytes))", "\(FileSizeFormatter.format(summary.freedBytes)) cleaned up", "Очищено \(FileSizeFormatter.format(summary.freedBytes))"),
+                subtitle: summary.removedCount < summary.selectedCount
+                    ? L10n.tr("已移除 \(summary.removedCount) / \(summary.selectedCount) 项", "\(summary.removedCount) of \(summary.selectedCount) items removed", "Выбрано \(summary.selectedCount) \(L10n.russianPlural(summary.selectedCount, one: "объект", few: "объекта", many: "объектов")), удалено \(summary.removedCount)")
+                        + (summary.errorCount > 0 ? L10n.tr(" — \(summary.errorCount) 个错误", " — \(summary.errorCount) error\(summary.errorCount == 1 ? "" : "s")", " — \(summary.errorCount) \(L10n.russianPlural(summary.errorCount, one: "ошибка", few: "ошибки", many: "ошибок"))") : "")
+                    : L10n.tr("可在清理历史中撤销。", "Moved to the Trash. You can put things back from Activity.", "Перемещено в Корзину. Вернуть можно в разделе «Активность»."),
+                palette: palette,
+                extra: {
+                    if summary.errorCount > 0 { viewLogButton }
+                },
+                onDone: onReset)
+        }
+    }
+
+    private var viewLogButton: some View {
+        Button {
+            showActivityLog = true
+        } label: {
+            Label(L10n.tr("查看日志", "View Log", "Открыть журнал"), systemImage: "doc.text.magnifyingglass")
+        }
+        .buttonStyle(.ghostPill)
+        .help(L10n.tr("打开活动日志，查看每个错误并复制详情用于反馈问题", "Open the activity log to see every error and copy details for a bug report", "Открыть журнал операций, просмотреть каждую ошибку и скопировать сведения для отчёта"))
     }
 
     /// Renders the error summary on the post-clean screen. Single error
@@ -173,9 +301,8 @@ struct ModuleContainerView: View {
         if summary.errorCount == 1, let msg = summary.firstErrorMessage {
             Text(msg)
                 .font(.system(size: 13))
-                .foregroundStyle(.primary.opacity(0.75))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .foregroundStyle(.white.opacity(0.75))
+                .multilineTextAlignment(.leading)
                 .textSelection(.enabled)
         } else if !summary.topErrorGroups.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -213,262 +340,4 @@ struct ModuleContainerView: View {
         }
     }
 
-    private func cleaningView(progress: CleaningEngine.Progress) -> some View {
-        VStack(spacing: 24) {
-            Spacer()
-            ScanProgressRing(
-                progress: progress.fraction,
-                phase: progress.totalItems > 0
-                    ? L10n.tr("正在清理… \(Int((progress.fraction * 100).rounded()))%", "Cleaning… \(Int((progress.fraction * 100).rounded()))%", "Очистка… \(Int((progress.fraction * 100).rounded()))%")
-                    : L10n.tr("正在开始清理...", "Starting cleanup...", "Подготовка к очистке..."),
-                theme: theme
-            )
-            if progress.totalItems > 0 {
-                Text(L10n.tr("已处理 \(progress.processedItems.formatted()) / \(progress.totalItems.formatted()) 项", "\(progress.processedItems.formatted()) of \(progress.totalItems.formatted()) items", "Всего \(progress.totalItems.formatted()) \(L10n.russianPlural(progress.totalItems, one: "объект", few: "объекта", many: "объектов")), обработано \(progress.processedItems.formatted())"))
-                    .font(.system(size: 12, design: .monospacedUnlessRightToLeft))
-                    .foregroundStyle(.primary.opacity(0.65))
-            }
-            if let onCancelClean {
-                Button(L10n.tr("取消", "Cancel", "Отмена")) { onCancelClean() }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .controlSize(.large)
-            }
-            Spacer()
-        }
-    }
-
-    private var idleView: some View {
-        VStack(spacing: 28) {
-            Spacer()
-            VStack(spacing: 10) {
-                Text(title)
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(.primary)
-                Text(subtitle)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.primary.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 380)
-            }
-            ScanButton(title: L10n.tr("扫描", "Scan", "Сканировать"), subtitle: title, theme: theme, action: onScan)
-            Spacer()
-        }
-    }
-
-    private var scanningView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            ScanProgressRing(progress: scanProgress, phase: scanPhase, theme: theme)
-            Spacer()
-        }
-    }
-
-    private var emptyResultsView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(.primary.opacity(0.9))
-            Text(emptyMessage)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.primary)
-            Text(L10n.tr("扫描完成——没有需要清理的内容", "Scan complete — nothing to clean up", "Сканирование завершено — очищать нечего"))
-                .font(.system(size: 13))
-                .foregroundStyle(.primary.opacity(0.55))
-            Button(L10n.tr("完成", "Done", "Готово")) { onReset() }
-                .buttonStyle(.bordered)
-                .tint(.primary)
-                .controlSize(.large)
-            Spacer()
-        }
-    }
-
-    /// Shown when the scan came back empty only because macOS blocked the
-    /// read (Full Disk Access not granted). Without this the user saw
-    /// "nothing to clean up" over a Trash that was actually full.
-    private var permissionDeniedView: some View {
-        VStack(spacing: 18) {
-            Spacer()
-            Image(systemName: "lock.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(.primary.opacity(0.9))
-            Text(L10n.tr("需要完全磁盘访问权限", "Full Disk Access needed", "Требуется полный доступ к диску"))
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.primary)
-            Text(L10n.tr("macOS 正在阻止访问此位置。请为 \(MCConstants.appName) 授予完全磁盘访问权限，然后重新扫描。", "macOS is blocking access to this location. Grant \(MCConstants.appName) Full Disk Access, then scan again.", "macOS блокирует доступ к этому расположению. Предоставьте \(MCConstants.appName) полный доступ к диску и повторите сканирование."))
-                .font(.system(size: 13))
-                .foregroundStyle(.primary.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
-            HStack(spacing: 10) {
-                if let onGrantAccess {
-                    Button(L10n.tr("打开设置", "Open Settings", "Открыть настройки")) { onGrantAccess() }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.primary)
-                        .controlSize(.large)
-                }
-                Button(L10n.tr("重新扫描", "Rescan", "Сканировать снова")) { onScan() }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .controlSize(.large)
-                Button(L10n.tr("完成", "Done", "Готово")) { onReset() }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .controlSize(.large)
-            }
-            Spacer()
-        }
-    }
-
-    private var resultsView: some View {
-        VStack(spacing: 0) {
-            HStack {
-                SizeDisplay(size: totalSelected, label: L10n.tr("已选择"))
-                    .foregroundStyle(.primary)
-                Spacer()
-                Button(actionLabel ?? L10n.tr("清理", "Clean", "Очистить")) {
-                    if confirmEmptyTrash {
-                        // Trash Bins: permanent + irreversible — always confirm.
-                        showEmptyTrashConfirm = true
-                    } else if selectedCount > MCConstants.cleanConfirmationThreshold {
-                        showLargeSelectionConfirm = true
-                    } else {
-                        onClean()
-                    }
-                }
-                    .buttonStyle(SuperEllipseButtonStyle(
-                        gradient: theme.buttonGradient,
-                        size: CGSize(width: 110, height: 40)
-                    ))
-                    // Prevent clicking Clean with nothing checked — the
-                    // resulting "0 bytes cleaned up" screen used to be
-                    // indistinguishable from a real cleanup failure.
-                    .disabled(selectedCount == 0)
-                    .opacity(selectedCount == 0 ? 0.5 : 1.0)
-                    .help(selectedCount == 0
-                          ? L10n.tr("请至少勾选一个要清理的项目", "Check at least one item to clean", "Выберите хотя бы один объект для очистки")
-                          : confirmEmptyTrash
-                            ? L10n.tr("从废纸篓中永久删除 \(selectedCount) 项", "Permanently delete \(selectedCount) item(s) from the Trash", "Навсегда удалить \(selectedCount) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов")) из Корзины")
-                            : L10n.tr("将 \(selectedCount) 项移到废纸篓", "Move \(selectedCount) item(s) to Trash", "Переместить \(selectedCount) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов")) в Корзину"))
-                    .alert(
-                        L10n.tr("清理 \(selectedCount.formatted()) 项？", "Clean \(selectedCount.formatted()) items?", "Очистить \(selectedCount.formatted()) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов"))?"),
-                        isPresented: $showLargeSelectionConfirm
-                    ) {
-                        Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-                        Button(L10n.tr("继续", "Continue", "Продолжить"), role: .destructive) { onClean() }
-                    } message: {
-                        Text(L10n.tr("约 \(formattedSelectedSize) 数据，可能需要几分钟。清理过程中可以取消。", "That's about \(formattedSelectedSize) of data and may take several minutes. You can cancel mid-cleanup.", "Объём данных — около \(formattedSelectedSize). Операция может занять несколько минут, но её можно отменить."))
-                    }
-                    // Trash Bins empties ~/.Trash permanently — there is no
-                    // recovery, so this confirmation fires on every Empty
-                    // regardless of how many items are selected.
-                    .alert(
-                        L10n.tr("清空废纸篓？", "Empty the Trash?", "Очистить Корзину?"),
-                        isPresented: $showEmptyTrashConfirm
-                    ) {
-                        Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-                        Button(L10n.tr("清空废纸篓", "Empty Trash", "Очистить Корзину"), role: .destructive) { onClean() }
-                    } message: {
-                        Text(L10n.tr("这会永久删除 \(selectedCount.formatted()) 项（\(formattedSelectedSize)），且无法撤销。", "This permanently deletes \(selectedCount.formatted()) item\(selectedCount == 1 ? "" : "s") (\(formattedSelectedSize)) and cannot be undone.", "Безвозвратное удаление: \(selectedCount.formatted()) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов")) (\(formattedSelectedSize)). Отменить это действие нельзя."))
-                    }
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-
-            Group {
-                if let resultsContent {
-                    resultsContent()
-                } else {
-                    FileListView(results: results, selectedItems: $selectedItems)
-                }
-            }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
-        }
-    }
-
-    /// Scrolls when taller than the window (support card on a small window)
-    /// instead of overflowing the pane.
-    private func doneView(summary: CleanSummary) -> some View {
-        FitOrScroll { doneContent(summary: summary) }
-    }
-
-    private func doneContent(summary: CleanSummary) -> some View {
-        VStack(spacing: 20) {
-            Spacer()
-
-            // Three honest end-states. Previously this view rendered
-            // "0 bytes cleaned up" for all of: nothing-selected,
-            // everything-errored, AND no-junk-found cases — making the
-            // app look broken when it was working correctly.
-            if summary.selectedCount == 0 {
-                Image(systemName: "checklist.unchecked")
-                    .font(.system(size: 52))
-                    .foregroundStyle(.primary.opacity(0.85))
-                Text(L10n.tr("未选择任何项目", "Nothing was selected", "Ничего не выбрано"))
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.primary)
-                Text(L10n.tr("请重新扫描，勾选要移除的项目，然后点击“清理”。", "Re-run the scan, check the items you want to remove, then click Clean.", "Повторите сканирование, отметьте объекты для удаления и нажмите «Очистить»."))
-                    .font(.system(size: 13))
-                    .foregroundStyle(.primary.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            } else if summary.removedCount == 0 {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 52))
-                    .foregroundStyle(.orange.opacity(0.85))
-                Text(L10n.tr("\(summary.selectedCount) 项无法清理", "\(summary.selectedCount) item\(summary.selectedCount == 1 ? "" : "s") couldn't be cleaned", "Не удалось очистить \(summary.selectedCount) \(L10n.russianPlural(summary.selectedCount, one: "объект", few: "объекта", many: "объектов"))"))
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.primary)
-                // Show the actual first error message instead of "Check
-                // Console for details" — the user shouldn't need to open
-                // Console.app to find out it was a limit / permission /
-                // SafetyGuard issue. For multi-error cases, fall back to
-                // the count summary.
-                cleanErrorDetail(for: summary)
-            } else {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 52))
-                    .foregroundStyle(.primary)
-                SizeDisplay(size: summary.freedBytes, label: L10n.tr("已清理", "cleaned up", "очищено"))
-                    .foregroundStyle(.primary)
-                if summary.removedCount < summary.selectedCount {
-                    Text(L10n.tr("已移除 \(summary.removedCount) / \(summary.selectedCount) 项", "\(summary.removedCount) of \(summary.selectedCount) items removed", "Выбрано \(summary.selectedCount) \(L10n.russianPlural(summary.selectedCount, one: "объект", few: "объекта", many: "объектов")), удалено \(summary.removedCount)") +
-                         (summary.errorCount > 0 ? L10n.tr(" — \(summary.errorCount) 个错误", " — \(summary.errorCount) error\(summary.errorCount == 1 ? "" : "s")", " — \(summary.errorCount) \(L10n.russianPlural(summary.errorCount, one: "ошибка", few: "ошибки", many: "ошибок"))") : ""))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.65))
-                }
-                if SupportAskLedger.shared.shouldAsk(for: summary) {
-                    SupportCard()
-                        .padding(.horizontal, 40)
-                }
-            }
-
-            HStack(spacing: 10) {
-                if summary.errorCount > 0 {
-                    Button {
-                        showActivityLog = true
-                    } label: {
-                        Label(L10n.tr("查看日志", "View Log", "Открыть журнал"), systemImage: "doc.text.magnifyingglass")
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .controlSize(.large)
-                    .help(L10n.tr("打开活动日志，查看每个错误并复制详情用于反馈问题", "Open the activity log to see every error and copy details for a bug report", "Открыть журнал операций, просмотреть каждую ошибку и скопировать сведения для отчёта"))
-                }
-                Button(L10n.tr("完成", "Done", "Готово")) { onReset() }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .controlSize(.large)
-            }
-            Spacer()
-        }
-        .sheet(isPresented: $showActivityLog) { LogViewerView() }
-    }
 }
