@@ -125,6 +125,13 @@ struct ModuleContainerView: View {
         return .idle
     }
 
+    /// Found size on the sidebar row while results are showing (UI_SPEC §3.2).
+    private var sidebarBadge: SidebarBadge? {
+        guard completion == nil, cleaning == nil, !isScanning, !results.isEmpty else { return nil }
+        let total = results.reduce(UInt64(0)) { $0 + $1.totalSize }
+        return total > 0 ? .size(total) : nil
+    }
+
     var body: some View {
         Group {
             if let completion {
@@ -147,6 +154,7 @@ struct ModuleContainerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .moduleStage(moduleStage)
+        .sidebarBadge(sidebarBadge)
         .respondsToModuleShortcuts(
             onScan: onScan,
             onClean: onClean,

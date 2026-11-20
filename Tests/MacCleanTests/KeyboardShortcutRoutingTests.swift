@@ -4,21 +4,30 @@ import XCTest
 final class KeyboardShortcutRoutingTests: XCTestCase {
 
     func testShortcutDigitsMapFirstNineModulesExcludingSettings() {
+        // Clean1: ⌘1–⌘9 follow the first nine rows of the sidebar as shown.
         let items = SidebarItem.keyboardShortcutItems
-        XCTAssertEqual(items.count, min(9, SidebarItem.allCases.filter { $0 != .settings }.count))
+        XCTAssertEqual(items, Array(SidebarSection.allCases.flatMap(\.items).prefix(9)))
+        XCTAssertEqual(items.count, 9)
         XCTAssertFalse(items.contains(.settings))
         XCTAssertEqual(items.first, .smartScan)
         XCTAssertEqual(SidebarItem.item(forShortcutDigit: 1), .smartScan)
         XCTAssertEqual(SidebarItem.item(forShortcutDigit: 2), .systemJunk)
-        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 7), .wifiNetworks)
-        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 8), .appPermissions)
+        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 7), .appPermissions)
+        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 8), .optimization)
+        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 9), .maintenance)
         XCTAssertEqual(SidebarItem.item(forShortcutDigit: 9), items[8])
-        // Saved Wi-Fi stays ⌘7. Permissions overview is ⌘8, so Optimization
-        // becomes ⌘9; Maintenance/Uninstaller/Extensions fall outside ⌘1–⌘9.
-        XCTAssertEqual(SidebarItem.item(forShortcutDigit: 9), .optimization)
-        XCTAssertFalse(items.contains(.maintenance))
         XCTAssertFalse(items.contains(.uninstaller))
         XCTAssertFalse(items.contains(.extensions))
+        // Tools and footer modules never take a digit.
+        for item in SidebarItem.toolItems + [SidebarItem.activityItem] {
+            XCTAssertFalse(items.contains(item))
+        }
+    }
+
+    func testEveryModuleIsReachableFromTheSidebar() {
+        let reachable = Set(SidebarSection.allCases.flatMap(\.items) + SidebarItem.toolItems
+            + [SidebarItem.activityItem, .settings])
+        XCTAssertEqual(reachable, Set(SidebarItem.allCases))
     }
 
     func testShortcutDigitsRejectOutOfRange() {

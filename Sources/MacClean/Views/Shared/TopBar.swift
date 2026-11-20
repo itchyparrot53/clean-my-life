@@ -6,7 +6,7 @@ import MacCleanKit
 // preferences cleared by the shell, so only the selected module is shown.
 
 /// What a module is doing, as far as the status button cares (UI_SPEC §1.3).
-enum ModuleStage: Equatable {
+enum ModuleStage: Equatable, Sendable {
     /// Intro / nothing running: small circle, teal dot.
     case idle
     /// Scanning or cleaning: small circle, animated dot.
@@ -79,9 +79,69 @@ extension View {
         return transformPreference(TopBarPreferenceKey.self) { $0.accessories.append(item) }
     }
 
-    /// Tells the status button what this module is doing.
+    /// Tells the status button and the sidebar what this module is doing.
     func moduleStage(_ stage: ModuleStage) -> some View {
         transformPreference(TopBarPreferenceKey.self) { $0.stage = stage }
+            .transformPreference(ModuleStatusKey.self) { $0.stage = stage }
+    }
+
+    /// The badge on this module's sidebar row (UI_SPEC §3.2). An outer call
+    /// overrides an inner one, so a module can replace its container's.
+    func sidebarBadge(_ badge: SidebarBadge?) -> some View {
+        transformPreference(ModuleStatusKey.self) { $0.badge = badge }
+    }
+
+    /// Asks the sidebar to dim or focus while this module is showing (UI_SPEC §3.3).
+    func sidebarMode(_ mode: SidebarMode) -> some View {
+        transformPreference(ModuleStatusKey.self) { $0.mode = mode }
+    }
+}
+
+// MARK: Sidebar status
+
+enum SidebarBadge: Equatable, Sendable {
+    /// Found size, e.g. "27.09 GB".
+    case size(UInt64)
+    /// Threat count, shown in amber.
+    case threats(Int)
+    /// Available updates.
+    case updates(Int)
+}
+
+enum SidebarMode: Equatable, Sendable {
+    case normal
+    /// Checkup review sheet open: whole panel at 35 %, not interactive.
+    case dimmed
+    /// Inside a list view: only the active group header and item stay.
+    case focused
+}
+
+/// What a module tells the sidebar about itself.
+struct ModuleStatus: Equatable, Sendable {
+    var stage: ModuleStage?
+    var badge: SidebarBadge?
+    var mode: SidebarMode?
+}
+
+struct ModuleStatusKey: PreferenceKey {
+    static var defaultValue: ModuleStatus { ModuleStatus() }
+
+    static func reduce(value: inout ModuleStatus, nextValue: () -> ModuleStatus) {
+        let next = nextValue()
+        if let stage = next.stage { value.stage = stage }
+        if let badge = next.badge { value.badge = badge }
+        if let mode = next.mode { value.mode = mode }
+    }
+}
+
+/// Latest status per module, collected by the shell for the sidebar.
+@MainActor
+@Observable
+final class SidebarStatusStore {
+    private(set) var statuses: [SidebarItem: ModuleStatus] = [:]
+
+    func set(_ status: ModuleStatus, for item: SidebarItem) {
+        if statuses[item] != status { statuses[item] = status }
     }
 }
 

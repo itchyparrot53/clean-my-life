@@ -105,6 +105,8 @@ struct UpdaterView: View {
                 Spacer()
             }
         }
+        .moduleStage(isChecking ? .working : (updates.isEmpty ? .idle : .results))
+        .sidebarBadge(updates.isEmpty ? nil : .updates(updates.count))
     }
 
     private func checkUpdates() {

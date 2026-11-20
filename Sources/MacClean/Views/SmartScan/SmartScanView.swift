@@ -55,6 +55,12 @@ struct SmartScanView: View {
         ]
     }
 
+    /// Total found, on the Checkup row (UI_SPEC §3.2).
+    private var sidebarBadge: SidebarBadge? {
+        if case .results(_, _, _, let totalSize, _) = scanState, totalSize > 0 { return .size(totalSize) }
+        return nil
+    }
+
     /// Status button state (UI_SPEC §1.3).
     private var moduleStage: ModuleStage {
         switch scanState {
@@ -84,6 +90,7 @@ struct SmartScanView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
         .moduleStage(moduleStage)
+        .sidebarBadge(sidebarBadge)
         .sheet(isPresented: $showActivityLog) { LogViewerView() }
         // Recompute the selected-size total only when the results or selection
         // actually change, NOT on every body pass. The footer reads

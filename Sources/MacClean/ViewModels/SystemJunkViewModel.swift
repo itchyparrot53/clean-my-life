@@ -10,6 +10,8 @@ final class SystemJunkViewModel {
         case empty
         case cleaning(progress: CleaningEngine.Progress?)
         case done(summary: CleanSummary)
+
+        var isResults: Bool { if case .results = self { true } else { false } }
     }
 
     var state: State = .idle

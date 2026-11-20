@@ -23,6 +23,7 @@ struct ContentView: View {
     }
 
     @State private var isFullScreen = false
+    @State private var sidebarStatus = SidebarStatusStore()
 
     var body: some View {
         GeometryReader { proxy in
@@ -141,22 +142,16 @@ struct ContentView: View {
         .offset(x: metrics.card.minX, y: metrics.card.minY)
     }
 
-    /// The sidebar, floating over the card's left edge.
+    /// The sidebar, floating over the card's left edge (UI_SPEC §3).
     private func sidebarPanel(_ metrics: ShellMetrics) -> some View {
         @Bindable var state = appState
-        let shape = RoundedRectangle(cornerRadius: Surface.sidebarRadius, style: .continuous)
-        return SidebarView(selection: $state.selectedSidebarItem)
+        let selectedStatus = appState.selectedSidebarItem.flatMap { sidebarStatus.statuses[$0] }
+        return SidebarView(
+            selection: $state.selectedSidebarItem,
+            statuses: sidebarStatus.statuses,
+            mode: selectedStatus?.mode ?? .normal)
             .environment(\.layoutDirection, contentDirection)
             .frame(width: metrics.sidebar.width, height: metrics.sidebar.height)
-            .background {
-                ZStack {
-                    shape.fill(.ultraThinMaterial)
-                    shape.fill(Surface.sidebarFill)
-                }
-            }
-            .clipShape(shape)
-            .overlay(shape.strokeBorder(Surface.sidebarStroke, lineWidth: 1))
-            .shadow(color: .black.opacity(0.28), radius: 16, y: 6)
             .offset(x: metrics.sidebar.minX, y: metrics.sidebar.minY)
     }
 
@@ -174,6 +169,10 @@ struct ContentView: View {
                         .allowsHitTesting(isSelected)
                         .accessibilityHidden(!isSelected)
                         .environment(\.moduleIsSelected, isSelected)
+                        // Every mounted module keeps its sidebar badge current.
+                        .onPreferenceChange(ModuleStatusKey.self) { [store = sidebarStatus] status in
+                            Task { @MainActor in store.set(status, for: item) }
+                        }
                         // Only the visible module talks to the top bar.
                         .transformPreference(TopBarPreferenceKey.self) { value in
                             if !isSelected { value = TopBarContent() }

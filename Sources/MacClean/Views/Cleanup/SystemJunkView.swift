@@ -9,6 +9,11 @@ struct SystemJunkView: View {
     @State private var showLargeSelectionConfirm = false
     @State private var showActivityLog = false
 
+    private func sidebarSize(_ results: [ScanResult]) -> SidebarBadge? {
+        let total = results.reduce(UInt64(0)) { $0 + $1.totalSize }
+        return total > 0 ? .size(total) : nil
+    }
+
     /// Status button state (UI_SPEC §1.3).
     private var moduleStage: ModuleStage {
         switch viewModel.state {
@@ -44,6 +49,7 @@ struct SystemJunkView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
         .moduleStage(moduleStage)
+        .sidebarBadge(viewModel.state.isResults ? sidebarSize(viewModel.results) : nil)
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .systemJunk) {
                 viewModel.restore(results: e.results, selection: e.selection, scanComplete: e.scanComplete, permissionDeniedPaths: e.permissionDeniedPaths)
