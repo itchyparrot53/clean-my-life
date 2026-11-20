@@ -285,7 +285,9 @@ struct HeroDisc: View {
             Circle()
                 .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
 
-            Image(systemName: symbol)
+            // An empty symbol leaves the disc bare (for overlays like the drawn check).
+            Image(systemName: symbol.isEmpty ? "circle" : symbol)
+                .opacity(symbol.isEmpty ? 0 : 1)
                 .font(.system(size: diameter * 0.58, weight: .regular))
                 .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)],
                                                 startPoint: .top, endPoint: .bottom))

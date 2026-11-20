@@ -583,7 +583,7 @@ struct DoneTemplate<Extra: View>: View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
                 ZStack {
-                    HeroDisc(palette: palette, symbol: "circle.fill", diameter: space.heroDiameter)
+                    HeroDisc(palette: palette, symbol: "", diameter: space.heroDiameter)
                         .opacity(0.55)
                     if isWarning {
                         Image(systemName: "exclamationmark.triangle.fill")

@@ -23,7 +23,7 @@ struct OnboardingFlow: View {
                 dots
                     .position(x: space.buttonCenter.x, y: space.buttonCenter.y - 58)
                 PrimarySlot {
-                    PrimaryButton(label: buttonLabel, action: primary)
+                    PrimaryButton(label: buttonLabel, meta: step == 3 ? "Runs a Checkup" : nil, action: primary)
                 }
                 if step > 0 {
                     Button(L10n.tr("返回", "Back", "Назад")) { withAnimation(TemplateMotion.morph) { step -= 1 } }
@@ -59,14 +59,14 @@ struct OnboardingFlow: View {
         switch step {
         case 1:
             ZStack {
-                HeroDisc(palette: .checkup, symbol: "circle.fill", diameter: size).opacity(0.6)
+                HeroDisc(palette: .checkup, symbol: "", diameter: size).opacity(0.6)
                 if hasAccess { DrawnCheck(size: size * 0.42) } else { AccessSwitchDrawing(width: size * 0.62) }
             }
         case 2:
             HeroDisc(palette: .checkup, symbol: "lock.shield", diameter: size)
         case 3:
             ZStack {
-                HeroDisc(palette: .checkup, symbol: "circle.fill", diameter: size).opacity(0.6)
+                HeroDisc(palette: .checkup, symbol: "", diameter: size).opacity(0.6)
                 MenuBarPreview(width: size * 0.78, on: showMenuBar)
             }
         default:
@@ -125,7 +125,7 @@ struct OnboardingFlow: View {
     private var buttonLabel: String {
         switch step {
         case 1: hasAccess ? "Continue" : "Open Settings"
-        case 3: "Run Checkup"
+        case 3: "Start"
         default: "Continue"
         }
     }
