@@ -25,16 +25,17 @@ struct DiskHogsView: View {
     private var selectedDevices: [SimulatorDevice] { devices.filter { selectedSim.contains($0.udid) } }
     private var selectedRuntimes: [SimulatorRuntime] { runtimes.filter { selectedSim.contains($0.identifier) } }
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .diskHogs, focusSidebar: false, showContent: $showList) {
+            legacyContent
+        }
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(DiskHogsText.title)
-                        .font(.system(size: 22, weight: .bold))
-                    Text(DiskHogsText.subtitle)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 Button {
                     startWork { await reload() }

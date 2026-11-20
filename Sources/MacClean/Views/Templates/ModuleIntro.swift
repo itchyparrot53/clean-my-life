@@ -255,6 +255,8 @@ extension SidebarItem {
                 action: "Open")
         case .settings:
             return ModuleIntro(heroSymbol: "gearshape", subtitle: "", bullets: [], action: "Open")
+        case .tools:
+            return ModuleIntro(heroSymbol: "square.grid.2x2", subtitle: "Smaller tools, one click away.", bullets: [], action: "Open")
         }
     }
 }

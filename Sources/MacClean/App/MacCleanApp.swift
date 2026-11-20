@@ -36,17 +36,8 @@ struct MacCleanApp: App {
                 // sidebar overhang and shadows (UI_SPEC §1.2).
                 .frame(minWidth: CardLayout.windowSize(forCard: CardLayout.minimumCard).width,
                        minHeight: CardLayout.windowSize(forCard: CardLayout.minimumCard).height)
-                .sheet(isPresented: $showOnboarding) {
-                    OnboardingView(isPresented: $showOnboarding)
-                        .environment(\.locale, Locale(identifier: appLanguage.localeIdentifier))
-                        .environment(\.layoutDirection, appLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
-                        .id(appLanguage.rawValue)
-                }
                 .onAppear {
-                    if !hasCompletedOnboarding {
-                        showOnboarding = true
-                        hasCompletedOnboarding = true
-                    }
+                    // Clean1: onboarding now runs inside the card (ContentView).
                     syncMenuBarOnLaunch()
                 }
                 .onOpenURL { url in

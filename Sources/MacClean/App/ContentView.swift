@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var isFullScreen = false
     @State private var sidebarStatus = SidebarStatusStore()
     @State private var toasts = ToastCenter()
+    @AppStorage("hasCompletedOnboarding") private var onboarded = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -32,7 +33,9 @@ struct ContentView: View {
             ZStack(alignment: .topLeading) {
                 if !metrics.isFullScreen { ResizeEdgeBand() }
                 card(metrics)
-                sidebarPanel(metrics)
+                if onboarded {
+                    sidebarPanel(metrics).transition(.opacity)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
             .background(
@@ -129,12 +132,33 @@ struct ContentView: View {
                 return false
             }())
             WindowDragArea()
-            moduleHost
-                .environment(\.cardGeometry, CardGeometry(card: metrics.card.size, content: metrics.content))
+            if onboarded {
+                moduleHost
+                    .environment(\.cardGeometry, CardGeometry(card: metrics.card.size, content: metrics.content))
                 .environment(\.toasts, toasts)
                 .frame(width: metrics.content.width, height: metrics.content.height)
                 .offset(x: metrics.content.minX, y: metrics.content.minY)
                 .environment(\.layoutDirection, contentDirection)
+            } else {
+                // UI_SPEC §7: first run fills the card, sidebar hidden.
+                OnboardingFlow { runCheckup in
+                    withAnimation(TemplateMotion.morph) { onboarded = true }
+                    appState.selectedSidebarItem = .smartScan
+                    // Give Checkup a moment to mount so it hears the scan request.
+                    if runCheckup {
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(400))
+                            appState.requestScanShortcut()
+                        }
+                    }
+                }
+                .environment(\.cardGeometry, CardGeometry(
+                    card: metrics.card.size,
+                    content: CGRect(x: 0, y: CardLayout.topBarHeight, width: metrics.card.width,
+                                    height: metrics.card.height - CardLayout.topBarHeight)))
+                .frame(width: metrics.card.width, height: metrics.card.height - CardLayout.topBarHeight)
+                .offset(y: CardLayout.topBarHeight)
+            }
         }
         .frame(width: metrics.card.width, height: metrics.card.height, alignment: .topLeading)
         .overlayPreferenceValue(TopBarPreferenceKey.self) { content in
@@ -230,7 +254,7 @@ struct ContentView: View {
         case .projectJunk:
             ProjectJunkView()
         case .cleanHistory:
-            CleanHistoryView()
+            ActivityView()
         case .malwareRemoval:
             MalwareView()
         case .privacy:
@@ -261,6 +285,8 @@ struct ContentView: View {
             DuplicatesView()
         case .shredder:
             ShredderView()
+        case .tools:
+            ToolsView()
         case .settings:
             SettingsPageView()
         }

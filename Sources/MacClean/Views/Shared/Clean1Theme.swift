@@ -55,7 +55,7 @@ extension SidebarItem {
         case .spaceLens, .duplicates: .spaceMap
         case .largeOldFiles: .largeOld
         case .shredder: .shredder
-        case .settings: .slate
+        case .settings, .tools: .slate
         }
     }
 }

@@ -26,7 +26,7 @@ final class KeyboardShortcutRoutingTests: XCTestCase {
 
     func testEveryModuleIsReachableFromTheSidebar() {
         let reachable = Set(SidebarSection.allCases.flatMap(\.items) + SidebarItem.toolItems
-            + [SidebarItem.activityItem, .settings])
+            + [SidebarItem.activityItem, .tools, .settings])
         XCTAssertEqual(reachable, Set(SidebarItem.allCases))
     }
 

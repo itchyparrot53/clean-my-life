@@ -47,22 +47,81 @@ struct SettingsPageView: View {
         return selectable.filter { $0.name.localizedCaseInsensitiveContains(languageSearch) }
     }
 
-    var body: some View {
-        Form {
-            headerSection
-            generalSection
-            alertsSection
-            interfaceLanguageSection
-            appearanceSection
-            languageSection
-            excludedFoldersSection
-            malwareDatabasesSection
-            aboutSection
+    /// Clean1 tabs (UI_SPEC §5.23). Mac Sai's sections, grouped.
+    enum Tab: String, CaseIterable, Identifiable {
+        case general, scanning, ignore, protection, notifications, helper, advanced, about
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .general: L10n.tr("通用", "General", "Основные")
+            case .scanning: L10n.tr("扫描", "Scanning", "Сканирование")
+            case .ignore: L10n.tr("忽略列表", "Ignore List", "Исключения")
+            case .protection: L10n.tr("防护", "Protection", "Защита")
+            case .notifications: L10n.tr("通知", "Notifications", "Уведомления")
+            case .helper: L10n.tr("助手", "Helper", "Помощник")
+            case .advanced: L10n.tr("高级", "Advanced", "Дополнительно")
+            case .about: L10n.tr("关于", "About", "О программе")
+            }
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
+    }
+
+    @State private var tab: Tab = .general
+    @AppStorage(CleanConfirmation.skipSafeKey) private var skipSafeConfirm = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Tab.allCases) { item in
+                        Button(item.title) { withAnimation(.easeOut(duration: 0.15)) { tab = item } }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12, weight: tab == item ? .semibold : .regular))
+                            .padding(.horizontal, 10)
+                            .frame(height: 26)
+                            .background(Capsule().fill(Color.white.opacity(tab == item ? 0.2 : 0.06)))
+                    }
+                }
+            }
+            Form {
+                switch tab {
+                case .general:
+                    headerSection
+                    generalSection
+                    interfaceLanguageSection
+                    appearanceSection
+                case .scanning:
+                    languageSection
+                case .ignore:
+                    excludedFoldersSection
+                case .protection:
+                    malwareDatabasesSection
+                case .notifications:
+                    alertsSection
+                case .helper:
+                    Section(L10n.tr("助手", "Helper", "Помощник")) {
+                        Text("Admin-only maintenance tasks ask for your password when you run them. A background helper that remembers the permission comes with code signing.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                case .advanced:
+                    Section(L10n.tr("高级", "Advanced", "Дополнительно")) {
+                        Toggle("Don't ask before cleaning safe items", isOn: $skipSafeConfirm)
+                        Text("Items in a \"review first\" category, very large selections and open apps always ask.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                case .about:
+                    aboutSection
+                }
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+        }
+        .foregroundStyle(TypeScale.primaryText)
         .frame(maxWidth: 680)
         .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .topBarTitle(L10n.tr("设置", "Settings", "Настройки"))
         .onAppear {
             launchAtLogin = loginLauncher.refreshStatus()
             keptLanguages = LanguagePreferences.userKept

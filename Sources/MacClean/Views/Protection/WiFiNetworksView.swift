@@ -11,21 +11,17 @@ struct WiFiNetworksView: View {
     @State private var pendingForget: [PreferredWiFiNetwork]?
     private let client = PreferredWiFiClient.live()
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .wifiNetworks, focusSidebar: false, showContent: $showList) {
+            legacyContent
+        }
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("已保存的 Wi-Fi", "Saved Wi-Fi", "Сохранённые сети Wi-Fi"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr(
-                        "移除不再使用的已保存网络，减少被追踪的可能。需要管理员权限。",
-                        "Remove saved networks you no longer use to shrink your tracking surface. Administrator access is required.",
-                        "Удаляйте сохранённые сети, которыми больше не пользуетесь — так меньше данных для отслеживания. Нужны права администратора."
-                    ))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 Button {
                     Task { await reload() }

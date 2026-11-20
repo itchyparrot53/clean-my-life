@@ -43,11 +43,21 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     // declaration order, keep pointing at the same modules)
     case cleanHistory = "清理历史"
 
+    // Clean1: the Tools page, opened from the sidebar footer.
+    case tools = "工具"
+
     // Footer (pinned below the list, not rendered in any section)
     case settings = "设置"
 
     public var id: String { rawValue }
-    public var title: String { L10n.tr(rawValue) }
+    public var title: String {
+        switch self {
+        case .tools: L10n.tr("工具", "Tools", "Инструменты")
+        // Clean1 shows Clean History as Activity (UI_SPEC §5.23).
+        case .cleanHistory: L10n.tr("活动", "Activity", "Активность")
+        default: L10n.tr(rawValue)
+        }
+    }
 
     /// Stable slug used in `macclean://module/<id>` deep links.
     public var deepLinkID: String {
@@ -74,6 +84,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .projectJunk: "project-junk"
         case .cleanHistory: "clean-history"
         case .unusedApps: "unused-apps"
+        case .tools: "tools"
         case .settings: "settings"
         }
     }
@@ -109,6 +120,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .projectJunk: "hammer"
         case .cleanHistory: "arrow.uturn.backward.circle"
         case .unusedApps: "moon.zzz"
+        case .tools: "square.grid.2x2"
         case .settings: "gearshape"
         }
     }
@@ -121,7 +133,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
         case .spaceLens, .largeOldFiles, .duplicates, .shredder: .files
-        case .settings: .settings
+        case .settings, .tools: .settings
         }
     }
 
@@ -133,7 +145,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
         case .spaceLens, .largeOldFiles, .duplicates, .shredder: .files
-        case .settings: .main
+        case .settings, .tools: .main
         }
     }
 
@@ -412,9 +424,8 @@ public struct SidebarView: View {
             footerButton(
                 symbol: "square.grid.2x2",
                 label: L10n.tr("工具", "Tools", "Инструменты"),
-                isSelected: selection.map(SidebarItem.toolItems.contains) ?? false
-            ) { showTools.toggle() }
-            .popover(isPresented: $showTools, arrowEdge: .top) { toolsMenu }
+                isSelected: selection == .tools || (selection.map(SidebarItem.toolItems.contains) ?? false)
+            ) { select(.tools) }
 
             footerButton(
                 symbol: "clock.arrow.circlepath",

@@ -11,16 +11,17 @@ struct BrowserExtensionsView: View {
     @State private var message: String?
     private let client = BrowserExtensionsClient()
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .browserExtensions, focusSidebar: false, showContent: $showList) {
+            legacyContent
+        }
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("浏览器扩展", "Browser Extensions", "Расширения браузеров"))
-                        .font(.system(size: 22, weight: .bold))
-                    Text(BrowserExtensionsStrings.subtitle)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 Button {
                     Task { await reload() }
