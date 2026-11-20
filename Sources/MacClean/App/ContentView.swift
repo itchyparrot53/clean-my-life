@@ -55,6 +55,10 @@ struct ContentView: View {
                 .environment(\.layoutDirection, contentDirection)
             }
         }
+        // Tell the menu bar glyph when anything is scanning or cleaning (UI_SPEC §6).
+        .onChange(of: sidebarStatus.statuses.values.contains { $0.stage == .working }, initial: true) { _, working in
+            SharedAppState.isWorking = working
+        }
         // Mark the current selection visited (runs initially too) so its view
         // is created on first visit and then retained.
         .onChange(of: appState.selectedSidebarItem, initial: true) { _, newValue in

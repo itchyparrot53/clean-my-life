@@ -24,6 +24,18 @@ final class MenuStatsModel {
     private(set) var devices: ConnectedDevices?
     private(set) var protection: SharedAppState.ProtectionStatus?
     private(set) var tips: [TipsEngine.Tip] = []
+    // Clean1 (UI_SPEC §6): sparkline history, status-item state, Trash size.
+    private(set) var cpuHistory: [Double] = []
+    private(set) var memoryHistory: [Double] = []
+    private(set) var isWorking = false
+    private(set) var trashBytes: UInt64?
+
+    /// Amber dot on the status item: threats found or the disk nearly full.
+    var hasAlert: Bool {
+        if let protection, protection.threatsFound > 0 { return true }
+        if let stats, stats.diskTotal > 0, stats.diskFree < 5 * 1024 * 1024 * 1024 { return true }
+        return false
+    }
 
     private let statsCollector = SystemStatsCollector()
     private let networkMonitor = NetworkSpeedMonitor()
@@ -58,8 +70,11 @@ final class MenuStatsModel {
             // keeps going and the last-known value stays on screen.
             if let s = await timed("stats", budget: .seconds(2), { await self.statsCollector.collect() }) {
                 stats = s
+                cpuHistory = Array((cpuHistory + [s.cpuUsage]).suffix(40))
+                memoryHistory = Array((memoryHistory + [s.memoryPressure]).suffix(40))
                 await healthMonitor.evaluate(stats: s)
             }
+            isWorking = SharedAppState.isWorking
             if let n = await timed("network", budget: .seconds(2), { await self.networkMonitor.measure() }) {
                 networkSpeed = n
             }
@@ -72,9 +87,22 @@ final class MenuStatsModel {
                 if let t = await timed("tips", budget: .seconds(3), { await self.tipsEngine.generateTips() }) {
                     tips = t
                 }
+                trashBytes = await Task.detached(priority: .utility) { Self.trashSize() }.value
             }
             try? await Task.sleep(for: .seconds(3))
         }
+    }
+
+    /// Size of the user's Trash (top level is enough to be useful).
+    nonisolated private static func trashSize() -> UInt64? {
+        let trash = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".Trash")
+        guard let walker = FileManager.default.enumerator(
+            at: trash, includingPropertiesForKeys: [.totalFileAllocatedSizeKey], options: []) else { return nil }
+        var total: UInt64 = 0
+        for case let url as URL in walker {
+            total += UInt64((try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey]).totalFileAllocatedSize) ?? 0)
+        }
+        return total
     }
 
     /// Run one collector step under a timeout, returning nil if it overruns its
@@ -107,7 +135,21 @@ final class MenuStatsModel {
 /// `@MainActor`.
 @MainActor
 final class MenuAppDelegate: NSObject, @preconcurrency NSApplicationDelegate {
+    private var previewWindow: NSWindow?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         MenuStatsModel.shared.start()
+        // Developer aid: CLEAN1_MENU_PREVIEW=1 shows the popover in a window,
+        // since the status item can sit behind the notch on crowded menu bars.
+        if ProcessInfo.processInfo.environment["CLEAN1_MENU_PREVIEW"] != nil {
+            let window = NSWindow(contentRect: NSRect(x: 200, y: 200, width: 640, height: 450),
+                                  styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.title = "Menu bar popover preview"
+            window.contentView = NSHostingView(rootView: MenuPopover(model: MenuStatsModel.shared))
+            window.makeKeyAndOrderFront(nil)
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            previewWindow = window
+        }
     }
 }

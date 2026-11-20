@@ -53,6 +53,14 @@ public enum SharedAppState {
         }
     }
 
+    /// Clean1: true while the main app is scanning or cleaning, so the menu
+    /// bar glyph can show its working ring (UI_SPEC §6).
+    private static let isWorkingKey = "clean1.isWorking"
+    public static var isWorking: Bool {
+        get { defaults.bool(forKey: isWorkingKey) }
+        set { defaults.set(newValue, forKey: isWorkingKey) }
+    }
+
     private static let protectionStatusKey = "protectionStatus"
 
     public static var protectionStatus: ProtectionStatus? {
