@@ -99,14 +99,35 @@ struct UninstallerView: View {
                         if isLoading {
                             ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
-                            splitPanes
+                            singleList
                         }
                     }
                     .cardList()
                 })
+            .overlay {
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("卸载", "Uninstall", "Удалить"),
+                                  meta: checkedApps.isEmpty ? nil : "\(checkedApps.count) application\(checkedApps.count == 1 ? "" : "s")",
+                                  tint: checkedApps.isEmpty ? .cyan : .pink,
+                                  progress: isUninstalling ? batchProgress : nil,
+                                  isEnabled: !checkedApps.isEmpty) { confirmBatch = true }
+                }
+            }
+            .overlay { flyingIcons }
+            .coordinateSpace(name: "uninstaller")
+            .onPreferenceChange(IconFrameKey.self) { frames in
+                Task { @MainActor in iconFrames = frames }
+            }
             .topBarSearch(text: $searchText, prompt: L10n.tr("搜索应用", "Search apps", "Поиск приложений"))
         })
         .task { await loadApps() }
+        .alert(L10n.tr("卸载 \(checkedApps.count) 个应用？", "Uninstall \(checkedApps.count) app\(checkedApps.count == 1 ? "" : "s")?", "Удалить приложения: \(checkedApps.count)?"),
+               isPresented: $confirmBatch) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) {}
+            Button(L10n.tr("移到废纸篓", "Move to Trash", "Переместить в Корзину"), role: .destructive) { uninstallChecked() }
+        } message: {
+            Text("The apps and the files they left behind go to the Trash. You can put them back from there.")
+        }
         .onChange(of: appState.pendingUninstallerAppPath) { _, path in
             guard let path else { return }
             showList = true
@@ -164,6 +185,240 @@ struct UninstallerView: View {
         } message: {
             Text(resetError ?? "")
         }
+    }
+
+    // MARK: Clean1 single list (UI_SPEC §4.6, §5.11)
+
+    @State private var checkedApps: Set<UUID> = []
+    @State private var expandedApp: UUID?
+    @State private var filesByApp: [UUID: [FileItem]] = [:]
+    @State private var excludedFiles: Set<URL> = []
+    @State private var confirmBatch = false
+    @State private var batchDone = 0
+    @State private var iconFrames: [UUID: CGRect] = [:]
+    @State private var flying: [FlyingIcon] = []
+
+    private var batchProgress: Double { Double(batchDone) / Double(max(1, checkedApps.count)) }
+
+    private static let pink = Color(hex: 0xF05A7E)
+
+    private var singleList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(filteredApps) { app in
+                    appRow(app)
+                        .transition(.asymmetric(insertion: .opacity,
+                                                removal: .opacity.combined(with: .scale(scale: 0.9, anchor: .top))))
+                    if expandedApp == app.id {
+                        componentRows(app)
+                    }
+                }
+            }
+            .animation(.easeOut(duration: 0.25), value: filteredApps.map(\.id))
+        }
+    }
+
+    private func appRow(_ app: AppInfo) -> some View {
+        let isChecked = checkedApps.contains(app.id)
+        let isProtected = safetyGuard.isProtectedApp(app.bundleIdentifier)
+        return HStack(spacing: 10) {
+            Button {
+                if isChecked { checkedApps.remove(app.id) } else { checkedApps.insert(app.id) }
+            } label: {
+                ZStack {
+                    Circle().strokeBorder(Color.white.opacity(isChecked ? 0 : 0.55), lineWidth: 1.5)
+                    Circle().fill(Self.pink).scaleEffect(isChecked ? 1 : 0.01).opacity(isChecked ? 1 : 0)
+                    Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
+                        .opacity(isChecked ? 1 : 0)
+                }
+                .frame(width: 16, height: 16)
+                .padding(4)
+                .contentShape(Rectangle())
+                .animation(.easeOut(duration: 0.12), value: isChecked)
+            }
+            .buttonStyle(.plain)
+            .disabled(isProtected)
+            .accessibilityLabel(app.name)
+            .accessibilityValue(isChecked ? "Selected" : "Not selected")
+
+            Image(nsImage: NSWorkspace.shared.icon(forFile: app.path.path(percentEncoded: false)))
+                .resizable()
+                .frame(width: 22, height: 22)
+                .background(GeometryReader { proxy in
+                    Color.clear.preference(key: IconFrameKey.self,
+                                           value: [app.id: proxy.frame(in: .named("uninstaller"))])
+                })
+
+            if isChecked {
+                Menu {
+                    Button(L10n.tr("卸载", "Uninstall", "Удалить")) { confirmBatch = true }
+                    Button(L10n.tr("恢复默认", "Reset", "Сбросить")) { requestReset(app) }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(L10n.tr("卸载", "Uninstall", "Удалить"))
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .bold))
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .padding(.horizontal, 7)
+                    .frame(height: 20)
+                    .background(Capsule().fill(Self.pink.opacity(0.85)))
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+            }
+
+            Text(app.name).font(TypeScale.row).lineLimit(1)
+            if isProtected {
+                Image(systemName: "lock").font(.system(size: 10)).foregroundStyle(TypeScale.tertiaryText)
+                    .help(L10n.tr("受保护的系统应用", "Protected system app — can't be removed", "Защищённое приложение"))
+            }
+            Spacer(minLength: 6)
+            if app.isUnused {
+                Text(L10n.tr("未使用", "Unused", "Не используется"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(TypeScale.secondaryText)
+                    .padding(.horizontal, 5)
+                    .frame(height: 16)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+            }
+            Text(app.formattedSize)
+                .font(TypeScale.rowSize)
+                .foregroundStyle(.white.opacity(0.8))
+            Button {
+                toggleExpanded(app)
+            } label: {
+                Image(systemName: expandedApp == app.id ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(TypeScale.tertiaryText)
+            .accessibilityLabel(L10n.tr("显示文件", "Show files", "Показать файлы"))
+        }
+        .foregroundStyle(TypeScale.primaryText)
+        .padding(.horizontal, 10)
+        .frame(height: 30)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { toggleExpanded(app) }
+    }
+
+    @ViewBuilder
+    private func componentRows(_ app: AppInfo) -> some View {
+        if let files = filesByApp[app.id] {
+            ForEach(files, id: \.url) { file in
+                let isOn = !excludedFiles.contains(file.url)
+                HStack(spacing: 8) {
+                    TriStateCheckbox(state: isOn ? .on : .off, size: 14) {
+                        if isOn { excludedFiles.insert(file.url) } else { excludedFiles.remove(file.url) }
+                    }
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: file.url.path(percentEncoded: false)))
+                        .resizable().frame(width: 16, height: 16)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(file.name).font(.system(size: 12)).lineLimit(1)
+                        Text(file.url.deletingLastPathComponent().path(percentEncoded: false))
+                            .font(.system(size: 10)).foregroundStyle(TypeScale.tertiaryText)
+                            .lineLimit(1).truncationMode(.middle)
+                    }
+                    Spacer(minLength: 6)
+                    Text(file.formattedSize).font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(TypeScale.secondaryText)
+                }
+                .foregroundStyle(TypeScale.primaryText)
+                .padding(.leading, 38)
+                .padding(.trailing, 40)
+                .frame(height: 28)
+            }
+        } else {
+            ProgressView().controlSize(.small).frame(height: 28)
+        }
+    }
+
+    private func toggleExpanded(_ app: AppInfo) {
+        withAnimation(.easeOut(duration: 0.2)) {
+            expandedApp = expandedApp == app.id ? nil : app.id
+        }
+        if filesByApp[app.id] == nil { loadFiles(for: app) }
+    }
+
+    private func loadFiles(for app: AppInfo) {
+        Task {
+            let files = pathFinder.findAssociatedFiles(for: app)
+            filesByApp[app.id] = files
+        }
+    }
+
+    private func requestReset(_ app: AppInfo) {
+        selectedApp = app
+        let files = filesByApp[app.id] ?? pathFinder.findAssociatedFiles(for: app)
+        filesByApp[app.id] = files
+        associatedFiles = files
+        selectedFiles = Set(files.map(\.url)).subtracting(excludedFiles)
+        appPendingReset = app
+    }
+
+    /// Uninstall every checked app in turn. Each removed row collapses and
+    /// its icon flies to the button (A19).
+    private func uninstallChecked() {
+        let targets = apps.filter { checkedApps.contains($0.id) }
+        guard !targets.isEmpty, !isUninstalling else { return }
+        isUninstalling = true
+        batchDone = 0
+        Task {
+            var failures: [String] = []
+            for app in targets {
+                let files = filesByApp[app.id] ?? pathFinder.findAssociatedFiles(for: app)
+                let selection = Set(files.map(\.url)).subtracting(excludedFiles)
+                guard let plan = AppUninstaller.plan(app: app, associatedFiles: files, selectedFiles: selection,
+                                                      safetyGuard: safetyGuard) else {
+                    failures.append(app.name)
+                    batchDone += 1
+                    continue
+                }
+                let result = await CleanActions.executeUserClean(items: plan.items, selectedItems: plan.selection,
+                                                                 engine: appState.cleaningEngine)
+                if result.errors.isEmpty {
+                    launchFlight(for: app)
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        apps.removeAll { $0.id == app.id }
+                        checkedApps.remove(app.id)
+                    }
+                } else {
+                    failures.append(app.name)
+                }
+                batchDone += 1
+            }
+            if !failures.isEmpty {
+                uninstallError = "Some items couldn't be removed for: " + failures.joined(separator: ", ")
+                    + ". Quit them if they're running and try again."
+            }
+            isUninstalling = false
+            await loadApps()
+        }
+    }
+
+    private func launchFlight(for app: AppInfo) {
+        guard let frame = iconFrames[app.id] else { return }
+        let icon = FlyingIcon(id: UUID(), image: NSWorkspace.shared.icon(forFile: app.path.path(percentEncoded: false)),
+                              start: CGPoint(x: frame.midX, y: frame.midY))
+        flying.append(icon)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(700))
+            flying.removeAll { $0.id == icon.id }
+        }
+    }
+
+    private var flyingIcons: some View {
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                ForEach(flying) { icon in
+                    FlyingIconView(icon: icon, target: space.buttonCenter)
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     private var filteredApps: [AppInfo] {
@@ -427,5 +682,42 @@ struct UninstallerView: View {
             selectedApp = nil
             associatedFiles = []
         }
+    }
+}
+
+struct FlyingIcon: Identifiable {
+    let id: UUID
+    let image: NSImage
+    let start: CGPoint
+}
+
+/// A19: the icon follows a curve to the button, shrinking to 0.2 and fading, 0.6 s.
+private struct FlyingIconView: View {
+    let icon: FlyingIcon
+    let target: CGPoint
+    @State private var began = Date()
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let raw = min(1, max(0, context.date.timeIntervalSince(began) / 0.6))
+            let t = CGFloat(raw * raw) // ease in
+            let control = CGPoint(x: (icon.start.x + target.x) / 2, y: min(icon.start.y, target.y) - 80)
+            let x = (1 - t) * (1 - t) * icon.start.x + 2 * (1 - t) * t * control.x + t * t * target.x
+            let y = (1 - t) * (1 - t) * icon.start.y + 2 * (1 - t) * t * control.y + t * t * target.y
+            Image(nsImage: icon.image)
+                .resizable()
+                .frame(width: 22, height: 22)
+                .scaleEffect(1 - 0.8 * t)
+                .opacity(Double(1 - t * 0.9))
+                .position(x: x, y: y)
+        }
+        .onAppear { began = Date() }
+    }
+}
+
+private struct IconFrameKey: PreferenceKey {
+    static var defaultValue: [UUID: CGRect] { [:] }
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue()) { $1 }
     }
 }

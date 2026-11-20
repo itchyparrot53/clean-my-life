@@ -59,6 +59,8 @@ struct ModuleContainerView: View {
     /// Verdict-type results (UI_SPEC §4.3 B) instead of the size summary.
     let verdict: [VerdictTemplate.Metric]?
     let verdictCaption: String?
+    /// `resultsContent` replaces both review columns.
+    let resultsFullWidth: Bool
 
     init(
         title: String,
@@ -86,7 +88,8 @@ struct ModuleContainerView: View {
         lastScan: String? = nil,
         scanningMotion: TemplateHero.Motion = .scanning,
         verdict: [VerdictTemplate.Metric]? = nil,
-        verdictCaption: String? = nil
+        verdictCaption: String? = nil,
+        resultsFullWidth: Bool = false
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -114,6 +117,7 @@ struct ModuleContainerView: View {
         self.scanningMotion = scanningMotion
         self.verdict = verdict
         self.verdictCaption = verdictCaption
+        self.resultsFullWidth = resultsFullWidth
     }
 
     @State private var showLargeSelectionConfirm = false
@@ -231,6 +235,7 @@ struct ModuleContainerView: View {
                 ReviewTemplate(
                     results: results, selectedItems: $selectedItems, palette: palette,
                     customContent: resultsContent,
+                    customFullWidth: resultsFullWidth,
                     actionLabel: actionLabel ?? L10n.tr("清理", "Clean", "Очистить"),
                     onBack: { showReview = false },
                     onAct: requestClean)

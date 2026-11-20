@@ -15,6 +15,8 @@ struct ReviewTemplate: View {
     var customContent: (() -> AnyView)?
     /// Off inside the Checkup sheet, where the card's own button stays.
     var showsPrimary = true
+    /// The custom content brings its own left column (Large & Old grouping).
+    var customFullWidth = false
     var actionLabel = L10n.tr("清理", "Clean", "Очистить")
     let onBack: () -> Void
     let onAct: () -> Void
@@ -45,11 +47,15 @@ struct ReviewTemplate: View {
     var body: some View {
         CardSpaceReader { space in
             HStack(alignment: .top, spacing: 18) {
-                categoryColumn
-                    .frame(width: space.geometry.content.width * 0.33)
-                    .staggerIn(0)
-                itemColumn
-                    .staggerIn(1)
+                if customFullWidth, let customContent {
+                    customContent().staggerIn(0)
+                } else {
+                    categoryColumn
+                        .frame(width: space.geometry.content.width * 0.33)
+                        .staggerIn(0)
+                    itemColumn
+                        .staggerIn(1)
+                }
             }
             .padding(.top, 8)
             .padding(.bottom, showsPrimary ? space.buttonReserve : 0)

@@ -31,6 +31,12 @@ struct DuplicatesView: View {
     /// the user taps Consolidate. Never computed in the body: the disk-touching
     /// estimate there re-ran on every checkbox toggle and froze the UI (#128).
     @State private var consolidateEstimate: UInt64 = 0
+    /// Our suggested keep per set: Mac Sai's original, remembered so the
+    /// "Suggested" caption survives the user picking another copy.
+    private var suggestedKeep: [UUID: URL] {
+        Dictionary(uniqueKeysWithValues: originalByGroup.map { ($0.key, $0.value) })
+    }
+    @State private var originalByGroup: [UUID: URL] = [:]
 
     var body: some View {
         Group {
@@ -106,17 +112,18 @@ struct DuplicatesView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 20)
 
-                                DuplicateGroupsList(
-                                    groups: displayGroups,
+                                DuplicatesReview(
+                                    groups: $displayGroups,
                                     selectedItems: $selectedItems,
-                                    expanded: $expandedGroups
+                                    suggested: suggestedKeep
                                 )
                             }
                         )
                     },
                     actionLabel: actionMode == .consolidate
                         ? L10n.tr("合并", "Consolidate", "Объединить")
-                        : nil
+                        : nil,
+                    resultsFullWidth: true
                 )
             } else if completion != nil {
                 ModuleContainerView(
@@ -137,6 +144,15 @@ struct DuplicatesView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Clean1: when the kept copy changes, the cleaner's list follows, so it
+        // still only ever sees the copies you're not keeping.
+        .onChange(of: displayGroups.map { $0.original.url }) { _, _ in
+            guard !displayGroups.isEmpty else { return }
+            let removable = displayGroups.flatMap(\.duplicates)
+            results = removable.isEmpty ? [] : [ScanResult(category: .duplicates, items: removable, autoSelect: false)]
+            let kept = Set(displayGroups.map { $0.original.url })
+            selectedItems.subtract(kept)
+        }
         // Idle / scanning paths don't use ModuleContainerView; relay ⌘R here.
         // When ModuleContainerView is shown it also listens to the same nonces —
         // outer must NOT accept ⌘K (canClean: false), or clean() runs twice and
@@ -276,6 +292,7 @@ struct DuplicatesView: View {
 
             scanTimerTask?.cancel()
             displayGroups = groups
+            originalByGroup = Dictionary(uniqueKeysWithValues: groups.map { ($0.id, $0.original.url) })
             expandedGroups = []
             // The cleaner only ever sees the removable copies — never an
             // original — so a kept copy can't be deleted even by selecting all.

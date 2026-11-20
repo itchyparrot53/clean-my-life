@@ -36,8 +36,12 @@ struct LargeOldFilesView: View {
             onClean: clean,
             onCancelClean: { cleanTask?.cancel() },
             onReset: reset,
+            resultsContent: {
+                AnyView(GroupedFileReview(results: results, selectedItems: $selectedItems))
+            },
             actionLabel: L10n.tr("移除", "Remove", "Удалить"),
-            introControl: AnyView(DiskPicker(selection: $location))
+            introControl: AnyView(DiskPicker(selection: $location)),
+            resultsFullWidth: true
         )
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .largeOldFiles) {

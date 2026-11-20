@@ -23,29 +23,59 @@ struct MaintenanceView: View {
         }
     }
 
-    private var legacyContent: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                // Was "Run All" — but blanket-running every task in this
-                // module hides hours-long Spotlight/Launch-Services
-                // disruption behind a single click. Only fire-and-forget
-                // safe tasks now; advanced ones require per-task consent.
-                Button(L10n.tr("运行安全任务", "Run Safe Tasks", "Запустить безопасные задачи")) { runSafeTasks() }
-                    .buttonStyle(.secondaryPill)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+    @State private var checked: Set<MaintenanceTask> = Set(MaintenanceTask.allCases.filter { $0.severity == .safe })
+    @State private var focused: MaintenanceTask = MaintenanceTask.allCases.first!
+    @State private var confirmBatch = false
 
-            DirectionalScrollView {
-                LazyVStack(spacing: 6) {
-                    ForEach(MaintenanceTask.allCases) { task in
-                        taskRow(task)
+    private var isAnyRunning: Bool { taskStates.values.contains { if case .running = $0 { true } else { false } } }
+
+    /// Two columns (UI_SPEC §5.10): tasks on the left, the chosen task's
+    /// explanation on the right, "Run" at the bottom.
+    private var legacyContent: some View {
+        CardSpaceReader { space in
+            HStack(alignment: .top, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Button(L10n.tr("推荐", "Recommended", "Рекомендуемые")) {
+                            checked = Set(MaintenanceTask.allCases.filter { $0.severity == .safe })
+                        }
+                        .buttonStyle(.ghostPill)
+                        Spacer()
+                        Text("\(checked.count) selected")
+                            .font(.system(size: 11))
+                            .foregroundStyle(TypeScale.tertiaryText)
+                    }
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(MaintenanceTask.allCases.enumerated()), id: \.element) { index, task in
+                                taskListRow(task).staggerIn(index)
+                            }
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .frame(width: space.geometry.content.width * 0.38)
+
+                taskDetail(focused)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .staggerIn(1)
             }
+            .foregroundStyle(TypeScale.primaryText)
+            .padding(.top, 8)
+            .padding(.bottom, space.buttonReserve)
+            .overlay {
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("运行", "Run", "Запустить"),
+                                  meta: "\(checked.count) task\(checked.count == 1 ? "" : "s")",
+                                  progress: isAnyRunning ? runProgress : nil,
+                                  isEnabled: !checked.isEmpty) { runChecked() }
+                }
+            }
+        }
+        .alert(L10n.tr("包含高级任务", "Includes advanced tasks", "Есть расширенные задачи"), isPresented: $confirmBatch) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) {}
+            Button(L10n.tr("仍要运行", "Run Anyway", "Всё равно запустить"), role: .destructive) { runBatch() }
+        } message: {
+            Text(checked.filter { $0.severity == .advanced }.map { "\($0.title): \($0.sideEffects)" }.joined(separator: "\n\n"))
         }
         .alert(
             L10n.tr("运行 \(taskAwaitingConfirmation?.title ?? "")？", "Run \(taskAwaitingConfirmation?.title ?? "")?", "Запустить \(taskAwaitingConfirmation?.title ?? "")?"),
@@ -65,6 +95,107 @@ struct MaintenanceView: View {
             }
         } message: { task in
             Text(task.sideEffects)
+        }
+    }
+
+
+    private var runProgress: Double {
+        let total = max(1, checked.count)
+        let done = checked.filter { task in
+            switch taskStates[task] { case .completed, .failed: true; default: false }
+        }.count
+        return Double(done) / Double(total)
+    }
+
+    /// Checkbox becomes the status while running: spinner → check / ✕.
+    private func taskListRow(_ task: MaintenanceTask) -> some View {
+        let isFocused = task == focused
+        return HStack(spacing: 10) {
+            Group {
+                switch taskStates[task] {
+                case .running:
+                    ProgressView().controlSize(.small).frame(width: 16, height: 16)
+                case .completed:
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(hex: 0x5EE6A0))
+                case .failed:
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color(hex: 0xF8C04E))
+                default:
+                    TriStateCheckbox(state: checked.contains(task) ? .on : .off) {
+                        if checked.contains(task) { checked.remove(task) } else { checked.insert(task) }
+                    }
+                }
+            }
+            .frame(width: 18)
+            CategoryTile(symbol: task.icon, tint: ModulePalette.maintenance.top)
+            Text(task.title).font(TypeScale.row).lineLimit(1)
+            Spacer(minLength: 4)
+            if task.severity == .advanced {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color(hex: 0xF8C04E))
+                    .help(L10n.tr("高级", "Advanced", "Расширенная"))
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 40)
+        .background(RoundedRectangle(cornerRadius: Surface.rowRadius, style: .continuous)
+            .fill(isFocused ? Surface.rowSelection : .clear))
+        .contentShape(Rectangle())
+        .onTapGesture { focused = task }
+    }
+
+    private func taskDetail(_ task: MaintenanceTask) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(task.title).font(TypeScale.reviewTitle)
+            Text(task.description)
+                .font(TypeScale.reviewDescription)
+                .foregroundStyle(.white.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
+            if task.severity == .advanced {
+                Label(task.sideEffects, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: 0xF8C04E))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if task.requiresAdmin {
+                Label(L10n.tr("需要管理员密码", "Asks for your administrator password.", "Нужен пароль администратора"), systemImage: "lock")
+                    .font(.system(size: 12))
+                    .foregroundStyle(TypeScale.secondaryText)
+            }
+            Text(lastRunText(task))
+                .font(.system(size: 11))
+                .foregroundStyle(TypeScale.tertiaryText)
+            switch taskStates[task] {
+            case .completed(let output) where !output.isEmpty:
+                Text(output).font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(TypeScale.secondaryText).lineLimit(6).textSelection(.enabled)
+            case .failed(let message):
+                Text(message).font(.system(size: 12)).foregroundStyle(Color(hex: 0xF8C04E)).textSelection(.enabled)
+            default:
+                EmptyView()
+            }
+            Button(L10n.tr("仅运行此项", "Run Only This", "Запустить только её")) { didTapRun(task) }
+                .buttonStyle(.ghostPill)
+                .disabled(isRunning(task))
+        }
+    }
+
+    private func lastRunText(_ task: MaintenanceTask) -> String {
+        guard let date = UserDefaults.standard.object(forKey: "clean1.maintenance.lastRun." + task.rawValue) as? Date else {
+            return L10n.tr("从未运行", "Never run here", "Ещё не запускалась")
+        }
+        return "Last run " + date.formatted(.relative(presentation: .named))
+    }
+
+    private func runChecked() {
+        if checked.contains(where: { $0.severity == .advanced }) { confirmBatch = true } else { runBatch() }
+    }
+
+    /// Sequential, like Mac Sai's safe run, so the admin password is asked once.
+    private func runBatch() {
+        let tasks = MaintenanceTask.allCases.filter(checked.contains)
+        Task {
+            for task in tasks { await executeAndStore(task) }
         }
     }
 
@@ -168,6 +299,7 @@ struct MaintenanceView: View {
     private func executeAndStore(_ task: MaintenanceTask) async {
         taskStates[task] = .running
         let result = await executor.execute(task)
+        UserDefaults.standard.set(Date(), forKey: "clean1.maintenance.lastRun." + task.rawValue)
         if result.success {
             taskStates[task] = .completed(result.output)
         } else {

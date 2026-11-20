@@ -15,114 +15,97 @@ struct UnusedAppsView: View {
     @State private var showList = false
 
     var body: some View {
-        IntroGate(item: .unusedApps, primaryMeta: nil, focusSidebar: false,
+        IntroGate(item: .unusedApps, primaryMeta: nil, focusSidebar: true,
                   showContent: $showList) {
             legacyContent
         }
     }
 
+    /// List-first (UI_SPEC §4.6): how long unused on the left, apps on the right.
     private var legacyContent: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Picker(L10n.tr("时间", "Horizon", "Период"), selection: $horizon) {
-                    ForEach(UnusedAppHorizon.allCases) { h in
-                        Text(h.label).tag(h)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 260)
-                Button {
-                    Task { await reload() }
-                } label: {
+        ListFirstTemplate(
+            groups: [FilterGroup(id: "horizons", header: L10n.tr("未打开超过", "Not opened for", "Не открывались"),
+                                 items: UnusedAppHorizon.allCases.map { h in
+                FilterItem(id: h.rawValue, title: h.label,
+                           count: isLoading ? nil : UnusedApps.unused(from: records, horizon: h).count)
+            })],
+            selectedFilter: Binding(get: { horizon.rawValue },
+                                    set: { horizon = UnusedAppHorizon(rawValue: $0) ?? .sixMonths }),
+            title: L10n.tr("未使用的应用", "Unused Apps", "Неиспользуемые приложения"),
+            description: "Sorted by how much space they use. Uninstall hands an app to the Uninstaller with its leftovers.",
+            trailingHeader: {
+                Button { Task { await reload() } } label: {
                     Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
                 }
+                .buttonStyle(.ghostPill)
                 .disabled(isLoading)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-
-            Group {
-                if isLoading {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        ProgressView().controlSize(.large)
-                        Text(L10n.tr("正在查找未使用的应用…", "Looking for unused apps…", "Поиск неиспользуемых приложений…"))
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary.opacity(0.6))
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if UnusedApps.usageDataUnavailable(in: records) {
-                    VStack(spacing: 8) {
-                        Spacer()
-                        Text(L10n.tr("Spotlight 没有应用的使用记录", "Spotlight has no usage history for your apps", "В Spotlight нет истории использования приложений"))
-                            .font(.system(size: 13, weight: .medium))
-                        Text(L10n.tr(
-                            "无法判断哪些应用未被使用。请检查 Spotlight 索引是否已开启。",
-                            "Mac Sai can't tell which apps are unused. Check that Spotlight indexing is turned on.",
-                            "Невозможно определить неиспользуемые приложения. Проверьте, что индексация Spotlight включена."
-                        ))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.5))
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if apps.isEmpty {
-                    VStack {
-                        Spacer()
-                        Text(L10n.tr("没有符合条件的应用", "No unused apps in this window", "Нет неиспользуемых приложений за этот период"))
-                            .foregroundStyle(.primary.opacity(0.4))
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List(apps) { app in
-                        HStack(spacing: 12) {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: app.path))
-                                .resizable()
-                                .frame(width: 28, height: 28)
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Text(app.name)
-                                        .font(.system(size: 13, weight: .medium))
-                                    if app.runsInBackground {
-                                        Text(L10n.tr("后台", "Background", "Фоновое"))
-                                            .font(.system(size: 10))
-                                            .padding(.horizontal, 5)
-                                            .padding(.vertical, 1)
-                                            .background(.orange.opacity(0.2))
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                                Text(subtitle(for: app))
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Text(FileSizeFormatter.format(app.totalBytes))
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.secondary)
-                            Button(L10n.tr("卸载…", "Uninstall…", "Удалить…")) {
-                                appState.openUninstaller(forAppPath: app.path)
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding(.vertical, 2)
-                    }
-                    .listStyle(.inset)
-                }
-            }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
-        }
+            },
+            list: { listBody.cardList() })
         .task { await reload() }
         .respondsToModuleShortcuts(onScan: { Task { await reload() } }, canScan: !isLoading)
+    }
+
+    @ViewBuilder
+    private var listBody: some View {
+        if isLoading {
+            VStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text(L10n.tr("正在查找未使用的应用…", "Looking for unused apps…", "Поиск неиспользуемых приложений…"))
+                    .font(.system(size: 12)).foregroundStyle(TypeScale.secondaryText)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if UnusedApps.usageDataUnavailable(in: records) {
+            VStack(spacing: 6) {
+                Text(L10n.tr("Spotlight 没有应用的使用记录", "Spotlight has no usage history for your apps", "В Spotlight нет истории использования приложений"))
+                    .font(.system(size: 13, weight: .medium))
+                Text("\(MCConstants.appName) can't tell which apps are unused. Check that Spotlight indexing is on.")
+                    .font(.system(size: 12)).foregroundStyle(TypeScale.secondaryText)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if apps.isEmpty {
+            Text(L10n.tr("没有符合条件的应用", "Nothing unused for this long.", "Нет неиспользуемых приложений за этот период"))
+                .font(.system(size: 13)).foregroundStyle(TypeScale.secondaryText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(apps.enumerated()), id: \.element.id) { index, app in
+                        row(app).staggerIn(index)
+                    }
+                }
+            }
+        }
+    }
+
+    private func row(_ app: UnusedAppRecord) -> some View {
+        HStack(spacing: 10) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: app.path))
+                .resizable().frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
+                    Text(app.name).font(TypeScale.row).lineLimit(1)
+                    if app.runsInBackground {
+                        Text(L10n.tr("后台", "Background", "Фоновое"))
+                            .font(.system(size: 10))
+                            .padding(.horizontal, 5)
+                            .frame(height: 16)
+                            .background(Capsule().fill(Color.white.opacity(0.12)))
+                    }
+                }
+                Text(subtitle(for: app))
+                    .font(.system(size: 11)).foregroundStyle(TypeScale.tertiaryText).lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Text(FileSizeFormatter.format(app.totalBytes))
+                .font(TypeScale.rowSize).foregroundStyle(.white.opacity(0.8))
+            Button(L10n.tr("卸载…", "Uninstall…", "Удалить…")) {
+                appState.openUninstaller(forAppPath: app.path)
+            }
+            .buttonStyle(.ghostPill)
+        }
+        .foregroundStyle(TypeScale.primaryText)
+        .padding(.horizontal, 10)
+        .frame(height: 40)
     }
 
     private func subtitle(for app: UnusedAppRecord) -> String {

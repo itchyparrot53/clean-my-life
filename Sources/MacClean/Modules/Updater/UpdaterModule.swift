@@ -25,6 +25,9 @@ public actor AppUpdateChecker {
         public let downloadURL: URL?
         public let updateSize: UInt64?
         public let hasUpdate: Bool
+        /// Clean1: what's new, from the appcast (UI_SPEC §5.12).
+        public var releaseNotes: String? = nil
+        public var releaseNotesURL: URL? = nil
     }
 
     public init() {}
@@ -80,7 +83,9 @@ public actor AppUpdateChecker {
             availableVersion: latestMarketingVersion,
             downloadURL: downloadURL,
             updateSize: nil,
-            hasUpdate: hasUpdate
+            hasUpdate: hasUpdate,
+            releaseNotes: parser.latestReleaseNotes,
+            releaseNotesURL: parser.latestReleaseNotesURL
         )
     }
 }

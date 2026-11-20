@@ -27,6 +27,17 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
     /// Name of the item-level version element whose text is being collected.
     private var capturingElement: String?
     private var capturedText = ""
+    // Clean1: release notes for the newest item (UI_SPEC §5.12).
+    private var currentNotes: String?
+    private var currentNotesURL: URL?
+    private var bestShortNotes: String?
+    private var bestShortNotesURL: URL?
+    private var bestBuildNotes: String?
+    private var bestBuildNotesURL: URL?
+    /// Plain-text release notes of the item `parseLatestItem` picked, if any.
+    public private(set) var latestReleaseNotes: String?
+    /// Link to the release notes of that item, if the feed gives one.
+    public private(set) var latestReleaseNotesURL: URL?
 
     public override init() { super.init() }
 
@@ -39,6 +50,12 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
         bestShortDownloadURL = nil
         bestBuildVersion = nil
         bestBuildDownloadURL = nil
+        bestShortNotes = nil
+        bestShortNotesURL = nil
+        bestBuildNotes = nil
+        bestBuildNotesURL = nil
+        latestReleaseNotes = nil
+        latestReleaseNotesURL = nil
         inItem = false
         resetCurrentItem()
         let parser = XMLParser(data: data)
@@ -51,6 +68,8 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
         let downloadURL = bestShortVersion == nil
             ? bestBuildDownloadURL
             : bestShortDownloadURL
+        latestReleaseNotes = bestShortVersion == nil ? bestBuildNotes : bestShortNotes
+        latestReleaseNotesURL = bestShortVersion == nil ? bestBuildNotesURL : bestShortNotesURL
         return (version, downloadURL)
     }
 
@@ -76,7 +95,9 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
                 currentAttributeBuildVersion = attributes[Self.buildVersionKey]
             }
         case Self.shortVersionKey where inItem && !inDeltas,
-             Self.buildVersionKey where inItem && !inDeltas:
+             Self.buildVersionKey where inItem && !inDeltas,
+             "description" where inItem && !inDeltas,
+             "sparkle:releaseNotesLink" where inItem && !inDeltas:
             capturingElement = elementName
             capturedText = ""
         default:
@@ -88,6 +109,10 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
         if capturingElement != nil { capturedText += string }
     }
 
+    public func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
+        if capturingElement != nil, let text = String(data: CDATABlock, encoding: .utf8) { capturedText += text }
+    }
+
     public func parser(_ parser: XMLParser, didEndElement elementName: String,
                        namespaceURI: String?, qualifiedName: String?) {
         switch elementName {
@@ -97,6 +122,10 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
             currentElementShortVersion = trimmedCapture()
         case Self.buildVersionKey where capturingElement == elementName:
             currentElementBuildVersion = trimmedCapture()
+        case "description" where capturingElement == elementName:
+            currentNotes = trimmedCapture().map(Self.plainText)
+        case "sparkle:releaseNotesLink" where capturingElement == elementName:
+            currentNotesURL = trimmedCapture().flatMap(URL.init(string:))
         case "item":
             finishItem()
         default:
@@ -120,11 +149,15 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
            shouldReplace(bestShortVersion, with: version) {
             bestShortVersion = version
             bestShortDownloadURL = currentDownloadURL
+            bestShortNotes = currentNotes
+            bestShortNotesURL = currentNotesURL
         }
         if let version = currentElementBuildVersion ?? currentAttributeBuildVersion,
            shouldReplace(bestBuildVersion, with: version) {
             bestBuildVersion = version
             bestBuildDownloadURL = currentDownloadURL
+            bestBuildNotes = currentNotes
+            bestBuildNotesURL = currentNotesURL
         }
         resetCurrentItem()
     }
@@ -134,7 +167,22 @@ public final class AppcastParser: NSObject, XMLParserDelegate, @unchecked Sendab
         return UpdateChecker.isNewer(candidate, than: bestVersion)
     }
 
+    /// Release notes are usually HTML; keep readable text only.
+    static func plainText(_ html: String) -> String {
+        var text = html.replacingOccurrences(of: "<li[^>]*>", with: "• ", options: .regularExpression)
+        text = text.replacingOccurrences(of: "<(br|/p|/li|/h[1-6])[^>]*>", with: "\n", options: [.regularExpression, .caseInsensitive])
+        text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        for (entity, char) in ["&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'", "&nbsp;": " "] {
+            text = text.replacingOccurrences(of: entity, with: char)
+        }
+        text = text.replacingOccurrences(of: "\n[ \t]+", with: "\n", options: .regularExpression)
+        text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func resetCurrentItem() {
+        currentNotes = nil
+        currentNotesURL = nil
         inDeltas = false
         currentDownloadURL = nil
         currentAttributeShortVersion = nil
