@@ -255,6 +255,26 @@ extension SidebarItem {
                 action: "Open")
         case .settings:
             return ModuleIntro(heroSymbol: "gearshape", subtitle: "", bullets: [], action: "Open")
+        case .aiClutter:
+            return ModuleIntro(
+                heroSymbol: "brain",
+                subtitle: "Caches and logs from AI apps, and the local models you've downloaded.",
+                bullets: [
+                    B(symbol: "arrow.triangle.2.circlepath", title: "Caches rebuild",
+                      body: "Claude, ChatGPT and other AI apps recreate their caches as needed."),
+                    B(symbol: "cpu", title: "Models, one by one",
+                      body: "Ollama, LM Studio and Hugging Face models with size and last use."),
+                ])
+        case .downloadsCleanup:
+            return ModuleIntro(
+                heroSymbol: "tray.and.arrow.down",
+                subtitle: "Your Downloads folder, sorted by where each file came from.",
+                bullets: [
+                    B(symbol: "shippingbox", title: "Installers",
+                      body: "Disk images and packages you've probably already installed."),
+                    B(symbol: "doc.on.doc", title: "Downloaded twice",
+                      body: "\"file (1)\" copies that match the original exactly."),
+                ])
         case .tools:
             return ModuleIntro(heroSymbol: "square.grid.2x2", subtitle: "Smaller tools, one click away.", bullets: [], action: "Open")
         }
@@ -293,6 +313,8 @@ extension ScanCategory {
         case .oldFiles: "calendar.badge.clock"
         case .duplicates: "doc.on.doc"
         case .projectJunk: "hammer"
+        case .localAIModels: "brain"
+        case .downloads: "arrow.down.circle"
         }
     }
 

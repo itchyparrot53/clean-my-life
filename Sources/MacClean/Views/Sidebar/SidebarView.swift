@@ -45,6 +45,9 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
 
     // Clean1: the Tools page, opened from the sidebar footer.
     case tools = "工具"
+    // Clean My Life new modules (UI_SPEC §5.3, §5.18).
+    case aiClutter = "AI 杂物"
+    case downloadsCleanup = "下载项"
 
     // Footer (pinned below the list, not rendered in any section)
     case settings = "设置"
@@ -53,6 +56,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     public var title: String {
         switch self {
         case .tools: L10n.tr("工具", "Tools", "Инструменты")
+        case .aiClutter: L10n.tr("AI 杂物", "AI Clutter", "AI-мусор")
+        case .downloadsCleanup: L10n.tr("下载项", "Downloads", "Загрузки")
         // Clean1 shows Clean History as Activity (UI_SPEC §5.23).
         case .cleanHistory: L10n.tr("活动", "Activity", "Активность")
         default: L10n.tr(rawValue)
@@ -85,6 +90,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .cleanHistory: "clean-history"
         case .unusedApps: "unused-apps"
         case .tools: "tools"
+        case .aiClutter: "ai-clutter"
+        case .downloadsCleanup: "downloads"
         case .settings: "settings"
         }
     }
@@ -121,6 +128,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .cleanHistory: "arrow.uturn.backward.circle"
         case .unusedApps: "moon.zzz"
         case .tools: "square.grid.2x2"
+        case .aiClutter: "brain"
+        case .downloadsCleanup: "tray.and.arrow.down"
         case .settings: "gearshape"
         }
     }
@@ -128,11 +137,11 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     public var theme: ModuleTheme {
         switch self {
         case .smartScan: .smartScan
-        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory: .cleanup
+        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory, .aiClutter: .cleanup
         case .malwareRemoval, .privacy, .browserExtensions, .wifiNetworks, .appPermissions: .protection
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
-        case .spaceLens, .largeOldFiles, .duplicates, .shredder: .files
+        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup: .files
         case .settings, .tools: .settings
         }
     }
@@ -140,11 +149,11 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     public var section: SidebarSection {
         switch self {
         case .smartScan: .main
-        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory: .cleanup
+        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory, .aiClutter: .cleanup
         case .malwareRemoval, .privacy, .browserExtensions, .wifiNetworks, .appPermissions: .protection
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
-        case .spaceLens, .largeOldFiles, .duplicates, .shredder: .files
+        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup: .files
         case .settings, .tools: .main
         }
     }
@@ -197,11 +206,11 @@ public enum SidebarSection: String, CaseIterable, Identifiable {
     public var items: [SidebarItem] {
         switch self {
         case .main: [.smartScan]
-        case .cleanup: [.systemJunk, .mailAttachments, .trashBins]
+        case .cleanup: [.systemJunk, .aiClutter, .mailAttachments, .trashBins]
         case .protection: [.malwareRemoval, .privacy, .appPermissions]
         case .performance: [.optimization, .maintenance]
         case .applications: [.uninstaller, .updater, .extensions]
-        case .files: [.spaceLens, .largeOldFiles, .duplicates, .shredder]
+        case .files: [.spaceLens, .largeOldFiles, .duplicates, .downloadsCleanup, .shredder]
         }
     }
 }

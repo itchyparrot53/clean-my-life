@@ -9,6 +9,8 @@ import MacCleanKit
 struct GroupedFileReview: View {
     let results: [ScanResult]
     @Binding var selectedItems: Set<URL>
+    /// Ready-made groups (Downloads); hides the Kind / Size / Last Opened switch.
+    var fixedGroups: [Group]?
 
     enum Grouping: String, CaseIterable, Identifiable {
         case kind, size, access
@@ -41,6 +43,7 @@ struct GroupedFileReview: View {
     }
 
     private var groups: [Group] {
+        if let fixedGroups { return fixedGroups }
         let all = files
         let buckets: [(String, String, String, (FileItem) -> Bool)]
         switch grouping {
@@ -94,11 +97,13 @@ struct GroupedFileReview: View {
         let current = groups.first { $0.id == focusedGroup } ?? groups.first
         HStack(alignment: .top, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                Picker(L10n.tr("分组", "Group by", "Группировать"), selection: $grouping) {
-                    ForEach(Grouping.allCases) { Text($0.title).tag($0) }
+                if fixedGroups == nil {
+                    Picker(L10n.tr("分组", "Group by", "Группировать"), selection: $grouping) {
+                        ForEach(Grouping.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(groups) { group in groupRow(group, isFocused: group.id == current?.id) }

@@ -287,6 +287,10 @@ struct ContentView: View {
             ShredderView()
         case .tools:
             ToolsView()
+        case .aiClutter:
+            AIClutterView()
+        case .downloadsCleanup:
+            DownloadsView()
         case .settings:
             SettingsPageView()
         }

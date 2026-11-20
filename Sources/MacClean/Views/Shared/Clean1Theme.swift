@@ -46,14 +46,14 @@ extension SidebarItem {
     var palette: ModulePalette {
         switch self {
         case .smartScan: .checkup
-        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory: .cleanup
+        case .systemJunk, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory, .aiClutter: .cleanup
         case .malwareRemoval, .privacy, .wifiNetworks, .appPermissions, .browserExtensions: .protection
         case .optimization: .optimisation
         case .maintenance: .maintenance
         case .uninstaller, .unusedApps, .extensions: .applications
         case .updater: .updater
         case .spaceLens, .duplicates: .spaceMap
-        case .largeOldFiles: .largeOld
+        case .largeOldFiles, .downloadsCleanup: .largeOld
         case .shredder: .shredder
         case .settings, .tools: .slate
         }
