@@ -247,7 +247,7 @@ extension SidebarItem {
         case .cleanHistory:
             return ModuleIntro(
                 heroSymbol: "clock.arrow.circlepath",
-                subtitle: "Everything Clean1 has removed, and what can still be put back.",
+                subtitle: "Everything \(MCConstants.appName) has removed, and what can still be put back.",
                 bullets: [
                     B(symbol: "arrow.uturn.backward", title: "Undo",
                       body: "Items still in the Trash can be restored."),

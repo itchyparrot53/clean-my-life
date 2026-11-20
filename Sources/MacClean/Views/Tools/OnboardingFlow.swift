@@ -79,8 +79,8 @@ struct OnboardingFlow: View {
         VStack(alignment: .leading, spacing: 10) {
             switch step {
             case 1:
-                Text("Let Clean1 look everywhere").font(TypeScale.introTitle)
-                Text("Caches, mail and the Trash sit in folders macOS protects. Turn on Full Disk Access for Clean1 in System Settings. This page notices on its own when it's on.")
+                Text("Let \(MCConstants.appName) look everywhere").font(TypeScale.introTitle)
+                Text("Caches, mail and the Trash sit in folders macOS protects. Turn on Full Disk Access for \(MCConstants.appName) in System Settings. This page notices on its own when it's on.")
                     .font(TypeScale.introSubtitle).foregroundStyle(TypeScale.secondaryText)
                 Label(hasAccess ? "Full Disk Access is on" : "Waiting for Full Disk Access…",
                       systemImage: hasAccess ? "checkmark.circle.fill" : "hourglass")
@@ -92,7 +92,7 @@ struct OnboardingFlow: View {
                 }
             case 2:
                 Text("Admin tasks").font(TypeScale.introTitle)
-                Text("A few maintenance tasks, like freeing purgeable space, need administrator rights. Clean1 asks for your password when you run one, never in the background.")
+                Text("A few maintenance tasks, like freeing purgeable space, need administrator rights. \(MCConstants.appName) asks for your password when you run one, never in the background.")
                     .font(TypeScale.introSubtitle).foregroundStyle(TypeScale.secondaryText)
             case 3:
                 Text("Keep an eye from the menu bar").font(TypeScale.introTitle)
@@ -102,7 +102,7 @@ struct OnboardingFlow: View {
                     .toggleStyle(.switch)
                     .onChange(of: showMenuBar) { _, on in Task { await MenuBarLauncher.shared.setEnabled(on) } }
             default:
-                Text("Welcome to Clean1").font(TypeScale.introTitle)
+                Text("Welcome to \(MCConstants.appName)").font(TypeScale.introTitle)
                 Text("A calm way to keep your Mac tidy, safe and quick. Nothing is removed without you seeing it first, and most things can be put back.")
                     .font(TypeScale.introSubtitle).foregroundStyle(TypeScale.secondaryText)
             }
