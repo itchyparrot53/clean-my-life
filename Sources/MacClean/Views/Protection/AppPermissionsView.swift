@@ -12,168 +12,111 @@ struct AppPermissionsView: View {
         AppPermissionOverview.apps(from: snapshot.grants)
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("权限总览", "Permissions", "Обзор разрешений"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr(
-                        "按应用查看持有哪些隐私权限。这是只读列表——按钮会打开系统设置。本应用无法关闭权限。",
-                        "See which privacy grants each app holds. This list is read-only — buttons open System Settings. Mac Sai cannot turn a permission off.",
-                        "Смотрите, какие разрешения есть у каждого приложения. Список только для чтения — кнопки открывают Системные настройки. Это приложение не может выключить разрешение."
-                    ))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.primary.opacity(0.6))
-                }
-                Spacer()
-                Button {
-                    Task { await reload() }
-                } label: {
-                    Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
-                }
-                .disabled(isLoading)
-                .help(L10n.tr("重新读取权限列表", "Reload the permission list", "Заново прочитать список разрешений"))
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+    @State private var showList = false
+    @State private var filter = "all"
 
-            Group {
-                if isLoading {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        ProgressView()
-                            .controlSize(.large)
-                            .tint(.primary)
-                        Text(L10n.tr("正在读取权限…", "Reading permissions…", "Чтение разрешений…"))
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary.opacity(0.6))
-                        Spacer()
-                    }
-                } else {
-                    list
-                }
+    private var grantsForFilter: [AppPermissionApp] {
+        guard filter != "all" else { return apps }
+        return apps.filter { $0.grants.contains { $0.permission.rawValue == filter } }
+    }
+
+    private var filterGroups: [FilterGroup] {
+        [
+            FilterGroup(id: "all", items: [
+                FilterItem(id: "all", title: L10n.tr("所有应用", "All Apps", "Все приложения"), count: apps.count),
+            ]),
+            FilterGroup(id: "services", header: L10n.tr("服务", "Services", "Службы"), items: PrivacyPermission.allCases.map { permission in
+                FilterItem(id: permission.rawValue, title: permissionTitle(permission),
+                           count: apps.filter { $0.grants.contains { $0.permission == permission } }.count)
+            }),
+        ]
+    }
+
+    var body: some View {
+        Group {
+            if showList {
+                ListFirstTemplate(
+                    groups: filterGroups, selectedFilter: $filter,
+                    title: filter == "all" ? L10n.tr("所有应用", "All Apps", "Все приложения")
+                        : PrivacyPermission(rawValue: filter).map(permissionTitle) ?? "",
+                    description: "Read-only overview. Changing a grant happens in System Settings.",
+                    onBack: { showList = false },
+                    trailingHeader: {
+                        Button {
+                            Task { await reload() }
+                        } label: {
+                            Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.ghostPill)
+                        .disabled(isLoading)
+                    },
+                    list: { listContent })
+                .transition(TemplateMotion.stateTransition)
+            } else {
+                IntroTemplate(title: L10n.tr("权限总览", "Permissions", "Обзор разрешений"),
+                              intro: SidebarItem.appPermissions.intro, palette: .protection,
+                              primaryMeta: isLoading ? nil : "\(apps.count) apps",
+                              onPrimary: { showList = true })
+                .transition(TemplateMotion.stateTransition)
             }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
         }
+        .animation(TemplateMotion.morph, value: showList)
         .task { await reload() }
         .respondsToModuleShortcuts(onScan: { Task { await reload() } }, canScan: !isLoading)
     }
 
-    private var list: some View {
-        List {
-            if snapshot.listing != .loaded {
-                listingBanner
-            }
-
-            if snapshot.listing == .loaded {
-                if apps.isEmpty {
-                    Text(L10n.tr(
-                        "未列出任何应用。",
-                        "No apps listed.",
-                        "Приложения не показаны."
-                    ))
-                    .font(.system(size: 13))
-                    .foregroundStyle(.primary.opacity(0.4))
-                    .listRowSeparator(.hidden)
-                } else {
-                    ForEach(apps) { app in
-                        appSection(app)
+    @ViewBuilder
+    private var listContent: some View {
+        if isLoading {
+            ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if snapshot.listing != .loaded {
+                        listingBanner.padding(.bottom, 8)
+                    }
+                    ForEach(grantsForFilter) { app in
+                        appRow(app)
+                    }
+                    if snapshot.listing == .loaded && grantsForFilter.isEmpty {
+                        Text(L10n.tr("未列出任何应用。", "No apps listed.", "Приложения не показаны."))
+                            .font(.system(size: 13))
+                            .foregroundStyle(TypeScale.tertiaryText)
+                            .padding(.top, 12)
                     }
                 }
             }
-
-            settingsJumpSection
-        }
-        .listStyle(.inset)
-    }
-
-    private func appSection(_ app: AppPermissionApp) -> some View {
-        Section {
-            ForEach(app.grants) { grant in
-                grantRow(grant)
-            }
-        } header: {
-            HStack(spacing: 8) {
-                Image(nsImage: icon(for: app))
-                    .resizable()
-                    .frame(width: 18, height: 18)
-                Text(displayName(for: app))
-                    .font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Text(grantCountLabel(app.grants.count))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
-    private func grantRow(_ grant: AppPermissionGrant) -> some View {
+    /// 30 pt row: icon, name, the grants as small symbols, and a jump to
+    /// System Settings for the filtered service.
+    private func appRow(_ app: AppPermissionApp) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: permissionIcon(grant.permission))
-                .foregroundStyle(.secondary)
-                .frame(width: 16)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 6) {
-                    Text(permissionTitle(grant.permission))
-                        .font(.system(size: 13, weight: .medium))
-                    if grant.isLimited {
-                        Text(L10n.tr("受限", "Limited", "Ограничено"))
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                if let target = grant.indirectObjectIdentifier, !target.isEmpty {
-                    Text(L10n.tr("控制 \(target)", "Controls \(target)", "Управляет \(target)"))
+            Image(nsImage: icon(for: app))
+                .resizable()
+                .frame(width: 22, height: 22)
+            Text(displayName(for: app))
+                .font(TypeScale.row)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            HStack(spacing: 6) {
+                ForEach(app.grants) { grant in
+                    Image(systemName: permissionIcon(grant.permission))
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(TypeScale.secondaryText)
+                        .help(permissionTitle(grant.permission) + (grant.isLimited ? " (limited)" : ""))
                 }
             }
-            Spacer()
-            Button(L10n.tr("在系统设置中打开", "Open in System Settings", "Открыть в Системных настройках")) {
-                client.openSettings(for: grant.permission)
+            Button(L10n.tr("打开设置", "Open Settings", "Настройки")) {
+                let permission = PrivacyPermission(rawValue: filter) ?? app.grants.first?.permission
+                if let permission { client.openSettings(for: permission) }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.ghostPill)
         }
-        .padding(.vertical, 2)
-    }
-
-    private var settingsJumpSection: some View {
-        Section {
-            ForEach(PrivacyPermission.allCases) { permission in
-                Button {
-                    client.openSettings(for: permission)
-                } label: {
-                    HStack {
-                        Label(permissionTitle(permission), systemImage: permissionIcon(permission))
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Text(L10n.tr("在系统设置中打开", "Open in System Settings", "Открыть в Системных настройках"))
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        } header: {
-            Text(L10n.tr("在系统设置中打开类别", "Open a category in System Settings", "Открыть категорию в Системных настройках"))
-                .font(.system(size: 13, weight: .semibold))
-        } footer: {
-            Text(L10n.tr(
-                "更改权限只能在系统设置中完成。",
-                "Changing a grant can only be done in System Settings.",
-                "Изменить разрешение можно только в Системных настройках."
-            ))
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-        }
+        .foregroundStyle(TypeScale.primaryText)
+        .padding(.horizontal, 8)
+        .frame(height: 34)
     }
 
     private var listingBanner: some View {
@@ -198,14 +141,12 @@ struct AppPermissionsView: View {
                     )
             )
             .font(.system(size: 12))
-            .foregroundStyle(.primary.opacity(0.7))
+            .foregroundStyle(.white.opacity(0.7))
             if snapshot.listing == .needsFullDiskAccess {
                 Button(L10n.tr("在系统设置中打开", "Open in System Settings", "Открыть в Системных настройках")) {
                     client.openFullDiskAccessSettings()
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.primary)
-                .controlSize(.small)
+                .buttonStyle(.secondaryPill)
             }
         }
         .padding(.vertical, 6)

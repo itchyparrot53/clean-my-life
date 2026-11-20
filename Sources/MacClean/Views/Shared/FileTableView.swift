@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Quartz
 import MacCleanKit
 
 /// AppKit-backed scan-results table.
@@ -20,7 +21,7 @@ struct FileTableView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let table = NSTableView()
+        let table = PreviewingTableView()
         let column = NSTableColumn(identifier: .init("main"))
         column.resizingMask = .autoresizingMask
         table.addTableColumn(column)
@@ -46,6 +47,17 @@ struct FileTableView: NSViewRepresentable {
         )
         reveal.target = coordinator
         menu.addItem(reveal)
+        // Clean1 (UI_SPEC §4.4): Quick Look and Ignore List.
+        let look = NSMenuItem(title: L10n.tr("快速查看", "Quick Look", "Быстрый просмотр"),
+                              action: #selector(Coordinator.quickLook(_:)), keyEquivalent: " ")
+        look.keyEquivalentModifierMask = []
+        look.target = coordinator
+        menu.addItem(look)
+        let ignore = NSMenuItem(title: L10n.tr("添加到忽略列表", "Add to Ignore List", "Добавить в исключения"),
+                                action: #selector(Coordinator.addToIgnoreList(_:)), keyEquivalent: "")
+        ignore.target = coordinator
+        menu.addItem(ignore)
+        table.onSpace = { [weak coordinator] in coordinator?.previewLastRow() }
         menu.delegate = coordinator
         table.menu = menu
 
@@ -168,9 +180,40 @@ struct FileTableView: NSViewRepresentable {
         @objc func tableClicked(_ sender: NSTableView) {
             let row = sender.clickedRow
             guard row >= 0, row < rows.count else { return }
+            lastRow = row
             switch rows[row] {
             case .header(let header): onToggleExpand(header.category)
             case .item(let item, _, _): onToggleItem(item.url)
+            }
+        }
+
+        /// Row the user last clicked; Space previews it.
+        var lastRow = -1
+        private var previewURL: URL?
+        var previewURLForPanel: URL? { previewURL }
+
+        @objc func quickLook(_ sender: NSMenuItem) {
+            guard let row = tableView?.clickedRow else { return }
+            preview(row: row)
+        }
+
+        func previewLastRow() { preview(row: lastRow) }
+
+        private func preview(row: Int) {
+            guard row >= 0, row < rows.count, case .item(let item, _, _) = rows[row],
+                  let panel = QLPreviewPanel.shared() else { return }
+            previewURL = item.url
+            panel.dataSource = self
+            if panel.isVisible { panel.reloadData() } else { panel.makeKeyAndOrderFront(nil) }
+        }
+
+        /// Folders are ignored as they are; a file adds its enclosing folder.
+        @objc func addToIgnoreList(_ sender: NSMenuItem) {
+            guard let row = tableView?.clickedRow, row >= 0, row < rows.count,
+                  case .item(let item, _, _) = rows[row] else { return }
+            let folder = item.isDirectory ? item.url : item.url.deletingLastPathComponent()
+            if !FolderExclusionPreferences.add(folder.path(percentEncoded: false)) {
+                NSSound.beep()
             }
         }
 
@@ -185,6 +228,26 @@ struct FileTableView: NSViewRepresentable {
             let isItem = row >= 0 && row < rows.count
                 && { if case .item = rows[row] { return true } else { return false } }()
             menu.items.forEach { $0.isHidden = !isItem }
+        }
+    }
+}
+
+extension FileTableView.Coordinator: @preconcurrency QLPreviewPanelDataSource {
+    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int { previewURLForPanel == nil ? 0 : 1 }
+    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> (any QLPreviewItem)! {
+        previewURLForPanel as NSURL?
+    }
+}
+
+/// Table that hands Space to Quick Look (UI_SPEC §4.4).
+final class PreviewingTableView: NSTableView {
+    var onSpace: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        if event.charactersIgnoringModifiers == " ", let onSpace {
+            onSpace()
+        } else {
+            super.keyDown(with: event)
         }
     }
 }

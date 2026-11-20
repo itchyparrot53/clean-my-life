@@ -34,7 +34,8 @@ struct TrashBinsView: View {
             onCancelClean: { cleanTask?.cancel() },
             onReset: reset,
             onGrantAccess: { PermissionManager.shared.openFullDiskAccessSettings() },
-            confirmEmptyTrash: true
+            confirmEmptyTrash: true,
+            actionLabel: L10n.tr("清空", "Empty", "Очистить")
         )
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .trashBins) {

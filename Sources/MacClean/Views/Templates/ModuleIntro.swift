@@ -106,7 +106,8 @@ extension SidebarItem {
                       body: "Every permission and the apps that have it, side by side."),
                     B(symbol: "gearshape", title: "Change in System Settings",
                       body: "Jump straight to the right pane to switch access off."),
-                ])
+                ],
+                action: "View Apps")
         case .optimization:
             return ModuleIntro(
                 heroSymbol: "slider.horizontal.3",

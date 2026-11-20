@@ -95,7 +95,7 @@ extension View {
 /// Hero disc at its intro spot, with the scanning sweep (A9) or the empty
 /// float (A30) when asked.
 struct TemplateHero: View {
-    enum Motion { case still, scanning, floating }
+    enum Motion { case still, scanning, radar, floating }
 
     let palette: ModulePalette
     let symbol: String
@@ -112,6 +112,11 @@ struct TemplateHero: View {
                     ScanSweep(diameter: diameter)
                 }
             }
+            .background {
+                if motion == .radar && !reduceMotion {
+                    RadarRings(diameter: diameter, tint: palette.top)
+                }
+            }
             .offset(y: bob)
             .matchedTemplate("hero", in: namespace)
             .onAppear { startMotion() }
@@ -126,7 +131,7 @@ struct TemplateHero: View {
     private func startMotion() {
         guard !reduceMotion, motion != .still else { phase = false; return }
         // A9 bobs over 3 s; A30 floats over 4 s.
-        withAnimation(.easeInOut(duration: motion == .scanning ? 1.5 : 2).repeatForever(autoreverses: true)) {
+        withAnimation(.easeInOut(duration: motion == .floating ? 2 : 1.5).repeatForever(autoreverses: true)) {
             phase.toggle()
         }
     }
@@ -161,6 +166,30 @@ private struct ScanSweep: View {
                 }
             }
             .frame(width: diameter, height: diameter)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// A16: three rings scale 0.7 → 1.7 and fade 0.45 → 0 over 2.4 s, 0.8 s apart.
+private struct RadarRings: View {
+    let diameter: CGFloat
+    let tint: Color
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            ZStack {
+                ForEach(0..<3, id: \.self) { index in
+                    let life = ((t + Double(index) * 0.8) / 2.4).truncatingRemainder(dividingBy: 1)
+                    Circle()
+                        .strokeBorder(Color.white.opacity(0.7), lineWidth: 1.5)
+                        .background(Circle().fill(tint.opacity(0.12)))
+                        .frame(width: diameter, height: diameter)
+                        .scaleEffect(0.7 + life)
+                        .opacity(0.45 * (1 - life))
+                }
+            }
         }
         .allowsHitTesting(false)
     }
@@ -297,12 +326,13 @@ struct ScanningTemplate: View {
     var found: String?
     let progress: Double
     var onStop: (() -> Void)?
+    var heroMotion: TemplateHero.Motion = .scanning
     @State private var started = Date()
 
     var body: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, motion: .scanning,
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, motion: heroMotion,
                              diameter: space.heroDiameter)
                     .position(space.heroCenter)
 
@@ -486,6 +516,7 @@ struct VerdictTemplate: View {
     let onReview: (() -> Void)?
     let onAct: () -> Void
     @State private var shifted = false
+    @State private var pulse = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -493,7 +524,7 @@ struct VerdictTemplate: View {
             ZStack(alignment: .topLeading) {
                 // A32: the hero slides left and grows, tucking behind the sidebar.
                 TemplateHero(palette: palette, symbol: intro.heroSymbol, diameter: space.heroDiameter)
-                    .scaleEffect(shifted ? 1.25 : 1)
+                    .scaleEffect((shifted ? 1.25 : 1) * (pulse ? 1.04 : 1))
                     .position(shifted ? CGPoint(x: space.x(0.30), y: space.heroCenter.y) : space.heroCenter)
 
                 VStack(alignment: .leading, spacing: 16) {
@@ -525,6 +556,13 @@ struct VerdictTemplate: View {
         }
         .onAppear {
             withAnimation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.9)) { shifted = true }
+            // A17: two gentle pulses when something needs attention.
+            guard !reduceMotion, metrics.contains(where: { $0.status == .warning }) else { return }
+            withAnimation(.easeInOut(duration: 0.35).repeatCount(4, autoreverses: true).delay(0.6)) { pulse = true }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2.1))
+                pulse = false
+            }
         }
     }
 }

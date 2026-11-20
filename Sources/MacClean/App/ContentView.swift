@@ -119,7 +119,10 @@ struct ContentView: View {
     private func card(_ metrics: ShellMetrics) -> some View {
         let shape = RoundedRectangle(cornerRadius: metrics.cardRadius, style: .continuous)
         return ZStack(alignment: .topLeading) {
-            ModuleBackdrop(item: currentItem)
+            ModuleBackdrop(item: currentItem, threat: {
+                if case .threats(let count) = sidebarStatus.statuses[currentItem]?.badge { return count > 0 }
+                return false
+            }())
             WindowDragArea()
             moduleHost
                 .environment(\.cardGeometry, CardGeometry(card: metrics.card.size, content: metrics.content))

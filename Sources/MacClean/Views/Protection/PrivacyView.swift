@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MacCleanKit
 
@@ -33,6 +34,12 @@ struct PrivacyView: View {
             onCancelClean: { cleanTask?.cancel() },
             onReset: reset
         )
+        // Browsers keep their history files open; offer to quit them (UI_SPEC §5.7).
+        .overlay(alignment: .top) {
+            if !results.isEmpty && !isScanning && cleaning == nil && completion == nil {
+                RunningBrowsersBar().padding(.horizontal, 8).padding(.top, 4)
+            }
+        }
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .privacy) {
                 results = e.results
@@ -121,5 +128,53 @@ struct PrivacyView: View {
 
     private func reset() {
         results = []; selectedItems = []; completion = nil; cleaning = nil; cleanTask = nil; scanComplete = false
+    }
+}
+
+/// A slim bar listing browsers that are open, each with a "Quit" pill.
+private struct RunningBrowsersBar: View {
+    @State private var running: [NSRunningApplication] = []
+
+    private static let browserIDs: Set<String> = [
+        "com.apple.Safari", "com.google.Chrome", "org.mozilla.firefox", "company.thebrowser.Browser",
+        "com.microsoft.edgemac", "com.brave.Browser", "com.operasoftware.Opera", "com.vivaldi.Vivaldi",
+    ]
+
+    var body: some View {
+        Group {
+            if !running.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color(hex: 0xF8C04E))
+                    Text("Quit open browsers so their data can be cleared.")
+                        .font(.system(size: 12))
+                    Spacer(minLength: 8)
+                    ForEach(running, id: \.processIdentifier) { app in
+                        HStack(spacing: 6) {
+                            if let icon = app.icon {
+                                Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+                            }
+                            Text(app.localizedName ?? "")
+                                .font(.system(size: 12))
+                            Button(L10n.tr("退出", "Quit", "Завершить")) { app.terminate() }
+                                .buttonStyle(.ghostPill)
+                        }
+                    }
+                }
+                .foregroundStyle(TypeScale.primaryText)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 36)
+                .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+        }
+        .onAppear(perform: refresh)
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didLaunchApplicationNotification)) { _ in refresh() }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didTerminateApplicationNotification)) { _ in refresh() }
+    }
+
+    private func refresh() {
+        running = NSWorkspace.shared.runningApplications.filter {
+            $0.bundleIdentifier.map(Self.browserIDs.contains) ?? false
+        }
     }
 }

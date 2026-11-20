@@ -34,6 +34,9 @@ struct ModulePalette: Equatable {
     static let shredder = ModulePalette(top: Color(hex: 0x4BA7C8), bottom: Color(hex: 0x2E4E86))
     static let slate = ModulePalette(top: Color(hex: 0x6E7A8D), bottom: Color(hex: 0x2D3441))
 
+    /// Malware with threats found (A17).
+    static let threat = ModulePalette(top: Color(hex: 0xD9665A), bottom: Color(hex: 0x4E3368))
+
     /// Neutral background for the "Remove background colors" setting.
     static let neutral = ModulePalette(top: Color(hex: 0x2A2B30), bottom: Color(hex: 0x1C1D21))
 }
@@ -220,9 +223,14 @@ enum GrainTexture {
 /// and a crossfade when the module changes (A1).
 struct ModuleBackdrop: View {
     let item: SidebarItem
+    /// A17: blend towards red while threats are showing.
+    var threat = false
     @AppStorage("removeBackgroundColors") private var removeBackgroundColors = false
 
-    private var palette: ModulePalette { removeBackgroundColors ? .neutral : item.palette }
+    private var palette: ModulePalette {
+        if removeBackgroundColors { return .neutral }
+        return threat ? .threat : item.palette
+    }
 
     var body: some View {
         ZStack {
@@ -249,6 +257,6 @@ struct ModuleBackdrop: View {
             }
             .allowsHitTesting(false)
         }
-        .animation(Motion.backdropCrossfade, value: palette)
+        .animation(threat ? .easeInOut(duration: 0.8) : Motion.backdropCrossfade, value: palette)
     }
 }

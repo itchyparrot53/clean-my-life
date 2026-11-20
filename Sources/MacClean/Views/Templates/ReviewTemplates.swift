@@ -13,6 +13,8 @@ struct ReviewTemplate: View {
     let palette: ModulePalette
     /// Replaces the item list (Duplicates groups, Malware reasons).
     var customContent: (() -> AnyView)?
+    /// Off inside the Checkup sheet, where the card's own button stays.
+    var showsPrimary = true
     var actionLabel = L10n.tr("清理", "Clean", "Очистить")
     let onBack: () -> Void
     let onAct: () -> Void
@@ -50,16 +52,15 @@ struct ReviewTemplate: View {
                     .staggerIn(1)
             }
             .padding(.top, 8)
-            .padding(.bottom, space.buttonReserve)
+            .padding(.bottom, showsPrimary ? space.buttonReserve : 0)
             .overlay {
-                PrimarySlot {
+                if showsPrimary { PrimarySlot {
                     PrimaryButton(label: actionLabel, meta: FileSizeFormatter.format(results.selectedSize(selectedItems)),
                                   isEnabled: !selectedItems.isEmpty, action: onAct)
-                }
+                } }
             }
         }
-        .topBarBack(L10n.tr("返回", "Back", "Назад"), action: onBack)
-        .topBarSearch(text: $query, prompt: L10n.tr("搜索", "Search", "Поиск"))
+        .modifier(ReviewTopBar(enabled: showsPrimary, query: $query, onBack: onBack))
         .onExitCommand(perform: onBack)
         .task(id: query) { await refilter() }
     }
@@ -219,6 +220,24 @@ struct ReviewTemplate: View {
     }
 }
 
+/// In-module review owns the top bar (Back + search); inside the Checkup
+/// sheet the sheet's own "‹ Back to Summary" does that job instead.
+private struct ReviewTopBar: ViewModifier {
+    let enabled: Bool
+    @Binding var query: String
+    let onBack: () -> Void
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .topBarBack(L10n.tr("返回", "Back", "Назад"), action: onBack)
+                .topBarSearch(text: $query, prompt: L10n.tr("搜索", "Search", "Поиск"))
+        } else {
+            content
+        }
+    }
+}
+
 // MARK: - Review sheet (§4.5)
 
 extension View {
@@ -272,6 +291,8 @@ private struct ReviewSheetModifier<Sheet: View>: ViewModifier {
                         }
                     }
                     .padding(16)
+                    // The card's button stays visible under the sheet (§4.5).
+                    .padding(.bottom, CardLayout.primaryButtonDiameter + CardLayout.primaryButtonBottomInset - 8)
                     .transition(reduceMotion ? .opacity : .offset(y: 24).combined(with: .opacity))
                     .onExitCommand { isPresented = false }
                     .sidebarMode(.dimmed)
@@ -305,6 +326,8 @@ struct ListFirstTemplate<List: View, Trailing: View>: View {
     @Binding var selectedFilter: String
     let title: String
     var description: String?
+    /// "‹ Intro" in the top bar; focused mode always needs a way out.
+    var onBack: (() -> Void)?
     @ViewBuilder var trailingHeader: Trailing
     @ViewBuilder var list: List
 
@@ -349,6 +372,7 @@ struct ListFirstTemplate<List: View, Trailing: View>: View {
             .padding(.bottom, space.buttonReserve)
         }
         .sidebarMode(.focused)
+        .modifier(OptionalBack(onBack: onBack))
     }
 
     private func filterRow(_ item: FilterItem) -> some View {
@@ -384,5 +408,19 @@ struct ListFirstTemplate<List: View, Trailing: View>: View {
         .contentShape(Rectangle())
         .onTapGesture { selectedFilter = item.id }
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct OptionalBack: ViewModifier {
+    let onBack: (() -> Void)?
+
+    func body(content: Content) -> some View {
+        if let onBack {
+            content
+                .topBarBack(L10n.tr("简介", "Intro", "Введение"), action: onBack)
+                .onExitCommand(perform: onBack)
+        } else {
+            content
+        }
     }
 }

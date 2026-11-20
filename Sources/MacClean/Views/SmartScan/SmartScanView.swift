@@ -22,6 +22,9 @@ struct SmartScanView: View {
     /// pass (the sidebar-switch beachball on large Smart Scans).
     @State private var selectedCleanSize: UInt64 = 0
     @State private var cleanSizeIndex: [URL: UInt64] = [:]
+    @State private var showReviewSheet = false
+    @State private var reviewArea: Area?
+    @Namespace private var morph
 
     struct CompletedModule: Identifiable {
         let id = UUID()
@@ -70,22 +73,31 @@ struct SmartScanView: View {
         }
     }
 
+    private var stateKey: String {
+        switch scanState {
+        case .idle: "idle"
+        case .scanning: "scanning"
+        case .results: "results"
+        case .empty: "empty"
+        case .cleaning: "cleaning"
+        case .done: "done"
+        }
+    }
+
     var body: some View {
-        Group {
-            switch scanState {
-            case .idle:
-                idleView
-            case .scanning(let phase, let progress, let filesFound, let sizeFound):
-                scanningView(phase: phase, progress: progress, filesFound: filesFound, sizeFound: sizeFound)
-            case .results(_, _, _, let totalSize, _):
-                resultsView(totalSize: totalSize)
-            case .empty:
-                emptyView
-            case .cleaning(let progress):
-                cleaningView(progress: progress)
-            case .done(let summary, let breakdown):
-                doneView(summary: summary, breakdown: breakdown)
-            }
+        ZStack {
+            stateView
+                .id(stateKey)
+                .transition(TemplateMotion.stateTransition)
+        }
+        .animation(TemplateMotion.morph, value: stateKey)
+        .environment(\.templateNamespace, morph)
+        .alert(CleanupStrings.confirmationTitle(count: selectedItems.count), isPresented: $showCleanConfirm) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
+            Button(L10n.tr("清理", "Clean", "Очистить"), role: .destructive) { runCleanup() }
+        } message: {
+            Text(cleanupConfirmationMessage(for: CleanupSelectionPolicy.selectedCategories(
+                in: cleanResults, selection: selectedItems)))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
@@ -121,234 +133,258 @@ struct SmartScanView: View {
         )
     }
 
-    // MARK: - Idle
+    @ViewBuilder
+    private var stateView: some View {
+        Group {
+            switch scanState {
+            case .idle:
+                idleView
+            case .scanning(let phase, let progress, let filesFound, let sizeFound):
+                scanningView(phase: phase, progress: progress, filesFound: filesFound, sizeFound: sizeFound)
+            case .results(_, _, _, let totalSize, _):
+                resultsView(totalSize: totalSize)
+            case .empty:
+                emptyView
+            case .cleaning(let progress):
+                cleaningView(progress: progress)
+            case .done(let summary, let breakdown):
+                doneView(summary: summary, breakdown: breakdown)
+            }
+        }
+    }
+
+    // MARK: - Areas (UI_SPEC §5.1)
+
+    /// Checkup's areas, each a column on the results screen and a lane while scanning.
+    enum Area: String, CaseIterable, Identifiable {
+        case cleanup, protection, speed, applications, files
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .cleanup: L10n.tr("清理", "Cleanup", "Очистка")
+            case .protection: L10n.tr("防护", "Protection", "Защита")
+            case .speed: L10n.tr("加速", "Speed", "Ускорение")
+            case .applications: L10n.tr("应用", "Applications", "Приложения")
+            case .files: L10n.tr("文件", "Files", "Файлы")
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .cleanup: "internaldrive"
+            case .protection: "shield.lefthalf.filled"
+            case .speed: "gauge.with.dots.needle.67percent"
+            case .applications: "shippingbox"
+            case .files: "doc.on.doc"
+            }
+        }
+
+        /// Placeholder for our column art (jar, lighthouse, paper plane…).
+        var art: String {
+            switch self {
+            case .cleanup: "takeoutbag.and.cup.and.straw"
+            case .protection: "light.beacon.max"
+            case .speed: "paperplane"
+            case .applications: "shippingbox"
+            case .files: "folder"
+            }
+        }
+
+        var blurb: String {
+            switch self {
+            case .cleanup: "Caches, logs and leftovers that are safe to remove."
+            case .protection: "Threats and privacy traces worth clearing."
+            case .speed: "Tasks that keep your Mac running smoothly."
+            case .applications: "Leftovers from apps you've removed."
+            case .files: "Large, old and duplicate files to look over."
+            }
+        }
+
+        var moduleIDs: Set<String> {
+            switch self {
+            case .cleanup: ["system_junk", "mail_attachments", "trash_bins", "systemJunk", "mailAttachments", "trashBins"]
+            case .protection: ["malware", "privacy"]
+            case .speed: ["optimization", "maintenance"]
+            case .applications: ["uninstaller", "updater"]
+            case .files: ["large_old_files", "duplicates", "space_lens", "shredder", "largeOldFiles"]
+            }
+        }
+
+        /// Lane group in `moduleOrder`.
+        var laneGroup: String {
+            switch self {
+            case .cleanup: L10n.tr("清理", "Cleanup", "Очистка")
+            case .protection: L10n.tr("防护", "Protection", "Защита")
+            case .speed: L10n.tr("加速", "Speed", "Ускорение")
+            case .applications: L10n.tr("应用", "Apps", "Приложения")
+            case .files: L10n.tr("文件", "Files", "Файлы")
+            }
+        }
+    }
+
+    private var moduleResults: [ModuleScanResult] {
+        if case .results(_, _, _, _, let modules) = scanState { return modules }
+        return []
+    }
+
+    private func results(in area: Area) -> [ScanResult] {
+        moduleResults.filter { area.moduleIDs.contains($0.moduleID) }
+            .flatMap(\.categories).filter { !$0.items.isEmpty }
+    }
+
+    /// Three columns by default; Applications and Files join when they found something.
+    private var shownAreas: [Area] {
+        Area.allCases.filter { area in
+            [.cleanup, .protection, .speed].contains(area) || !results(in: area).isEmpty
+        }
+    }
+
+    // MARK: - Intro (centred hero)
 
     private var idleView: some View {
-        VStack(spacing: 28) {
-            Spacer()
-
-            VStack(spacing: 8) {
-                Text(L10n.tr("智能扫描", "Checkup", "Умное сканирование"))
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(.primary)
-                Text(L10n.tr("扫描 Mac 中的垃圾文件、恶意威胁\n和性能问题", "Scan your Mac for junk files, malware threats,\nand performance issues", "Поиск на Mac мусора, вредоносных программ\nи проблем с производительностью"))
-                    .font(.system(size: 14))
-                    .foregroundStyle(.primary.opacity(0.65))
-                    .multilineTextAlignment(.center)
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", diameter: 0.35 * space.W)
+                    .position(x: space.x(0.5), y: space.y(0.38))
+                VStack(spacing: 8) {
+                    Text("Ready when you are")
+                        .font(.system(size: 30, weight: .semibold))
+                        .matchedTemplate("title", in: morph)
+                    Text("One scan checks junk, threats, speed and updates.")
+                        .font(TypeScale.introSubtitle)
+                        .foregroundStyle(TypeScale.secondaryText)
+                }
+                .foregroundStyle(TypeScale.primaryText)
+                .multilineTextAlignment(.center)
+                .frame(width: 0.6 * space.W)
+                .position(x: space.x(0.5), y: space.y(0.38) + 0.175 * space.W + 52)
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("扫描", "Scan", "Сканировать"), action: startScan)
+                }
             }
-
-            ScanButton(
-                title: L10n.tr("扫描", "Scan", "Сканировать"),
-                subtitle: L10n.tr("一键清理", "One-click cleanup", "Очистка одним нажатием"),
-                theme: .smartScan,
-                action: startScan
-            )
-
-            Spacer()
         }
-        .padding(.horizontal, 40)
     }
 
-    // MARK: - Scanning (redesigned)
+    // MARK: - Scanning (lanes, A15)
 
     private func scanningView(phase: String, progress: Double, filesFound: Int, sizeFound: UInt64) -> some View {
-        VStack(spacing: 0) {
-            // Top stats bar
-            HStack(spacing: 24) {
-                statBadge(label: L10n.tr("进度"), value: "\(Int(progress * 100))%")
-                statBadge(label: L10n.tr("已发现文件", "Files Found", "Найдено файлов"), value: filesFound.formatted())
-                statBadge(label: L10n.tr("大小", "Size", "Размер"), value: FileSizeFormatter.format(sizeFound))
-            }
-            .padding(.horizontal, 30)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
-
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(.primary.opacity(0.12))
-                        .frame(height: 6)
-
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(.primary)
-                        .frame(width: geo.size.width * progress, height: 6)
-                        .animation(.easeInOut(duration: 0.3), value: progress)
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", motion: .scanning,
+                             diameter: 0.25 * space.W)
+                    .position(x: space.x(0.5), y: space.y(0.28))
+                VStack(spacing: 6) {
+                    Text(L10n.tr("正在扫描…", "Scanning…", "Сканирование…"))
+                        .font(TypeScale.resultsHeadline)
+                        .matchedTemplate("title", in: morph)
+                    PathTicker(text: phase)
                 }
-            }
-            .frame(height: 6)
-            .padding(.horizontal, 30)
-            .padding(.bottom, 16)
+                .foregroundStyle(TypeScale.primaryText)
+                .frame(width: 0.5 * space.W)
+                .position(x: space.x(0.5), y: space.y(0.28) + 0.125 * space.W + 36)
 
-            // Module checklist
-            DirectionalScrollView {
-                VStack(spacing: 2) {
-                    ForEach(Array(Self.moduleOrder.enumerated()), id: \.offset) { index, module in
-                        moduleRow(module: module, currentPhase: phase)
+                HStack(spacing: 14) {
+                    ForEach(Array(Area.allCases.enumerated()), id: \.element) { index, area in
+                        lane(area, current: phase).staggerIn(index)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
-            }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial.opacity(0.5)) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
+                .frame(width: 0.78 * space.W)
+                .position(x: space.x(0.5), y: space.y(0.68))
 
-            Button(L10n.tr("取消", "Cancel", "Отмена")) { cancelScan() }
-                .buttonStyle(.bordered)
-                .tint(.primary)
-                .controlSize(.large)
-                .padding(.bottom, 20)
-        }
-    }
-
-    private func moduleRow(module: (id: String, name: String, icon: String, group: String), currentPhase: String) -> some View {
-        let isActive = currentPhase == module.name
-        let completed = completedModules.contains { $0.name == module.name }
-        let completedInfo = completedModules.first { $0.name == module.name }
-
-        return HStack(spacing: 10) {
-            // Status icon
-            ZStack {
-                if isActive {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.primary)
-                } else if completed {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "circle")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary.opacity(0.2))
+                PrimarySlot {
+                    PrimaryButton(label: "", meta: FileSizeFormatter.format(sizeFound),
+                                  progress: progress, onStop: cancelScan) {}
                 }
             }
-            .frame(width: 20)
-
-            // Module icon
-            Image(systemName: module.icon)
-                .font(.system(size: 14))
-                .foregroundStyle(isActive ? Color.primary : Color.primary.opacity(completed ? 0.6 : 0.25))
-                .frame(width: 20)
-
-            // Module name
-            Text(module.name)
-                .font(.system(size: 13, weight: isActive ? .semibold : .regular))
-                .foregroundStyle(isActive ? Color.primary : Color.primary.opacity(completed ? 0.7 : 0.3))
-
-            Spacer()
-
-            // Results for completed modules
-            if let info = completedInfo, info.fileCount > 0 {
-                Text(L10n.tr("\(info.fileCount) 项", "\(info.fileCount) items", "\(info.fileCount) \(L10n.russianPlural(info.fileCount, one: "объект", few: "объекта", many: "объектов"))"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.primary.opacity(0.5))
-                Text(FileSizeFormatter.format(info.size))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.6))
-            } else if completedInfo != nil {
-                Text(L10n.tr("干净", "Clean", "Чисто"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.green.opacity(0.7))
-            }
-
-            // Group tag
-            Text(module.group)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.4))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(.primary.opacity(0.08))
-                .clipShape(Capsule())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(isActive ? Color.primary.opacity(0.1) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func statBadge(label: String, value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
-                .contentTransition(.numericText())
-                .animation(.easeInOut(duration: 0.2), value: value)
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.5))
-                .textCase(.uppercase)
+    private func lane(_ area: Area, current: String) -> some View {
+        let modules = Self.moduleOrder.filter { $0.group == area.laneGroup }
+        let names = Set(modules.map(\.name))
+        let finished = completedModules.filter { names.contains($0.name) }
+        let size = finished.reduce(UInt64(0)) { $0 + $1.size }
+        let total = max(1, modules.count)
+        let fraction = modules.isEmpty ? 0 : Double(finished.count) / Double(total)
+        let isDone = !modules.isEmpty && finished.count >= modules.count
+        let isActive = names.contains(current)
+        return VStack(spacing: 8) {
+            Image(systemName: isDone ? "checkmark.circle.fill" : area.symbol)
+                .font(.system(size: 22))
+                .contentTransition(.symbolEffect(.replace))
+                .symbolEffect(.bounce, value: isDone)
+                .opacity(isActive || isDone ? 1 : 0.6)
+            Text(area.title)
+                .font(.system(size: 13, weight: .semibold))
+            Text(modules.isEmpty || (size == 0 && !isDone) ? "—" : FileSizeFormatter.format(size))
+                .font(.system(size: 12))
+                .foregroundStyle(TypeScale.secondaryText)
+                .numericRoll(size)
+            GeometryReader { proxy in
+                Capsule().fill(Color.white.opacity(0.18))
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(isDone ? 0.45 : 0.95))
+                            .frame(width: proxy.size.width * fraction)
+                    }
+            }
+            .frame(height: 2)
+            .animation(.easeOut(duration: 0.3), value: fraction)
         }
+        .foregroundStyle(TypeScale.primaryText)
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Results
+    // MARK: - Results (columns, A33)
 
     private func resultsView(totalSize: UInt64) -> some View {
-        VStack(spacing: 20) {
-            SizeDisplay(size: totalSize, label: L10n.tr("发现的垃圾", "of junk found", "найдено мусора"))
-                .foregroundStyle(.primary)
-                .padding(.top, 24)
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 4) {
+                    Text("Here's what Checkup found")
+                        .font(TypeScale.resultsHeadline)
+                        .matchedTemplate("title", in: morph)
+                    Text("Choose what to run, or run everything.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .foregroundStyle(TypeScale.primaryText)
+                .frame(width: space.geometry.content.width)
+                .offset(y: space.y(0.08))
 
-            HStack(spacing: 24) {
-                if case .results(let cleanup, _, _, _, _) = scanState {
-                    resultPill(icon: "trash.circle.fill", label: L10n.tr("清理", "Cleanup", "Очистка"), value: FileSizeFormatter.format(cleanup))
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(shownAreas.enumerated()), id: \.element) { index, area in
+                        CheckupColumn(
+                            area: area, results: results(in: area),
+                            selectedItems: $selectedItems,
+                            workingProgress: nil,
+                            onReview: { reviewArea = area; showReviewSheet = true })
+                            .frame(maxWidth: .infinity)
+                            .staggerIn(index)
+                    }
                 }
-                if case .results(_, let threats, _, _, _) = scanState {
-                    resultPill(icon: "shield.lefthalf.filled", label: L10n.tr("防护", "Protection", "Защита"), value: L10n.tr("\(threats) 个威胁", "\(threats) threats", "\(threats) \(L10n.russianPlural(threats, one: "угроза", few: "угрозы", many: "угроз"))"))
-                }
-                if case .results(_, _, let perf, _, _) = scanState {
-                    resultPill(icon: "gauge.with.dots.needle.67percent", label: L10n.tr("加速", "Speed", "Ускорение"), value: L10n.tr("\(perf) 项", "\(perf) items", "\(perf) \(L10n.russianPlural(perf, one: "объект", few: "объекта", many: "объектов"))"))
+                .frame(width: space.geometry.content.width)
+                .offset(y: space.y(0.22))
+
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("运行", "Run", "Запустить"),
+                                  meta: FileSizeFormatter.format(selectedCleanSize),
+                                  isEnabled: !selectedItems.isEmpty && !showReviewSheet) { showCleanConfirm = true }
                 }
             }
-
-            // Fill the remaining height so the list is tall enough to review
-            // comfortably (issue #85), instead of a short fixed box.
-            FileListView(results: cleanResults, selectedItems: $selectedItems, showsBulkSelection: true)
-                .frame(maxHeight: .infinity)
-                .background {
-                    if removeBackgroundColors { Color.clear }
-                    else { Rectangle().fill(.ultraThinMaterial) }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 20)
-
-            CleanupActionBar(
-                selectedCount: selectedItems.count,
-                totalCount: totalCleanItems,
-                selectedSize: selectedCleanSize,
-                gradient: ModuleTheme.smartScan.buttonGradient,
-                action: { showCleanConfirm = true }
-            )
-                .alert(CleanupStrings.confirmationTitle(count: selectedItems.count), isPresented: $showCleanConfirm) {
-                    Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-                    Button(L10n.tr("清理", "Clean", "Очистить"), role: .destructive) { runCleanup() }
-                } message: {
-                    Text(cleanupConfirmationMessage(for: CleanupSelectionPolicy.selectedCategories(
-                        in: cleanResults, selection: selectedItems)))
-                }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 20)
+        .topBarBack(L10n.tr("重新开始", "Start Over", "Начать заново"), action: resetScan)
+        .topBarTitle(L10n.tr("智能扫描", "Checkup", "Проверка"))
+        .reviewSheet(isPresented: $showReviewSheet, header: L10n.tr("清理详情", "Cleanup details", "Подробности очистки")) {
+            ReviewTemplate(
+                results: reviewArea.map(results(in:)) ?? cleanResults,
+                selectedItems: $selectedItems, palette: .checkup,
+                showsPrimary: false,
+                onBack: { showReviewSheet = false }, onAct: {})
+        }
     }
 
-    /// Total number of cleanable items found (across all categories).
-    private var totalCleanItems: Int {
-        cleanSizeIndex.count
-    }
-
-    /// Include the scan generation so a same-count rescan refreshes sizes.
-    private var cleanResultsSignature: String {
-        fileListResultsSignature(sort: .default, results: cleanResults)
-    }
-
-    /// Rebuild the url -> size lookup so recomputing the selected total is
-    /// O(selected) instead of O(all items) with a FileItem copy each pass.
+    /// Recompute the selected-size total from the url → size index.
     private func rebuildCleanSizeIndex() {
         var map = [URL: UInt64](minimumCapacity: cleanResults.reduce(0) { $0 + $1.items.count })
         for result in cleanResults {
@@ -363,135 +399,98 @@ struct SmartScanView: View {
         selectedCleanSize = CleanupSelectionPolicy.selectedSize(selectedItems, sizesByURL: cleanSizeIndex)
     }
 
-    // MARK: - Empty / Done / Cleaning
+    /// Include the scan generation so a same-count rescan refreshes sizes.
+    private var cleanResultsSignature: String {
+        fileListResultsSignature(sort: .default, results: cleanResults)
+    }
+
+    // MARK: - Empty / Working / Done
 
     private var emptyView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(.primary.opacity(0.9))
-            Text(L10n.tr("你的 Mac 很干净！", "Your Mac is clean!", "Ваш Mac чист!"))
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.primary)
-            Text(L10n.tr("未发现垃圾、威胁或性能问题", "No junk, threats, or performance issues found", "Мусор, угрозы и проблемы с производительностью не обнаружены"))
-                .font(.system(size: 14))
-                .foregroundStyle(.primary.opacity(0.6))
-            Button(L10n.tr("完成", "Done", "Готово")) { resetScan() }
-                .buttonStyle(.bordered)
-                .tint(.primary)
-                .controlSize(.large)
-            Spacer()
-        }
+        EmptyTemplate(title: "All clear", subtitle: "Checkup didn't find anything that needs attention.",
+                      intro: SidebarItem.smartScan.intro, palette: .checkup, onDone: resetScan)
     }
 
+    /// Working: the columns stay; selected ones show a mini progress ring (§5.1).
     private func cleaningView(progress: Double) -> some View {
-        VStack(spacing: 20) {
-            Spacer()
-            ScanProgressRing(progress: progress, phase: L10n.tr("正在清理你的 Mac...", "Cleaning your Mac...", "Очистка Mac..."), theme: .smartScan)
-            // Cancel mid-clean — consistent with the per-module views: just
-            // cancel the task and let it land on .done with whatever was
-            // already freed (the CleaningEngine checks Task.isCancelled at
-            // each chunk boundary). We do NOT reset to .idle here, because
-            // the in-flight task would race that back to .done.
-            Button(L10n.tr("取消", "Cancel", "Отмена")) { cleanTask?.cancel() }
-                .buttonStyle(.bordered)
-                .tint(.primary)
-                .controlSize(.large)
-            Text(L10n.tr("取消后会先完成当前一组。", "Cancelling finishes the current group first.", "При отмене текущая группа сначала завершится."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                Text(L10n.tr("正在运行…", "Running…", "Выполняется…"))
+                    .font(TypeScale.resultsHeadline)
+                    .foregroundStyle(TypeScale.primaryText)
+                    .matchedTemplate("title", in: morph)
+                    .frame(width: space.geometry.content.width)
+                    .offset(y: space.y(0.08))
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(shownAreas) { area in
+                        CheckupColumn(area: area, results: results(in: area), selectedItems: $selectedItems,
+                                      workingProgress: progress, onReview: nil)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(width: space.geometry.content.width)
+                .offset(y: space.y(0.22))
+                PrimarySlot {
+                    PrimaryButton(label: "", progress: progress, onStop: { cleanTask?.cancel() }) {}
+                }
+            }
         }
     }
 
-    /// Scrolls when taller than the window (support card on a small window)
-    /// instead of overflowing the pane.
     private func doneView(summary: CleanSummary, breakdown: [SmartScanCleanup.RecentlyCleanedRow]) -> some View {
-        FitOrScroll { doneContent(summary: summary, breakdown: breakdown) }
-    }
-
-    private func doneContent(summary: CleanSummary, breakdown: [SmartScanCleanup.RecentlyCleanedRow]) -> some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image(systemName: summary.wasCancelled ? "pause.circle.fill" : (summary.errorCount > 0 ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"))
-                .font(.system(size: 52))
-                .foregroundStyle(summary.errorCount > 0 || summary.wasCancelled ? Color.orange : Color.primary)
-            Text(summary.wasCancelled
-                 ? L10n.tr("清理已停止", "Cleanup stopped", "Очистка остановлена")
-                 : (summary.errorCount > 0
-                    ? L10n.tr("部分项目未能清理", "Some items could not be cleaned", "Часть объектов не удалось очистить")
-                    : L10n.tr("清理完成", "Cleanup finished", "Очистка завершена")))
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.primary)
-            SizeDisplay(size: summary.freedBytes, label: L10n.tr("已处理", "processed", "обработано"))
-                .foregroundStyle(.primary)
-
-            if !breakdown.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.tr("最近清理", "Recently cleaned", "Недавно очищено"))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.primary.opacity(0.55))
-                        .textCase(.uppercase)
-                    ForEach(breakdown, id: \.moduleID) { row in
-                        HStack(spacing: 10) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 14))
-                                .foregroundStyle(.green)
-                            Text(row.moduleName)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                            Spacer(minLength: 8)
-                            Text(recentlyCleanedDetail(row))
-                                .font(.system(size: 13, design: .monospacedUnlessRightToLeft))
-                                .foregroundStyle(.primary.opacity(0.7))
-                                .multilineTextAlignment(.trailing)
-                        }
+        CardSpaceReader { space in
+            ZStack(alignment: .topLeading) {
+                Group {
+                    if summary.errorCount > 0 || summary.wasCancelled {
+                        Image(systemName: summary.wasCancelled ? "pause.circle" : "exclamationmark.triangle.fill")
+                            .font(.system(size: 0.08 * space.W))
+                            .foregroundStyle(Color(hex: 0xF8C04E))
+                    } else {
+                        DrawnCheck(size: 0.12 * space.W)
                     }
                 }
-                .padding(16)
-                .frame(maxWidth: 420)
-                .background(.primary.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
+                .position(x: space.x(0.5), y: space.y(0.24))
 
-            if summary.errorCount > 0 {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(summary.topErrorGroups, id: \.message) { group in
-                        Text("\(group.count)× \(group.message)")
-                            .font(.callout)
-                            .textSelection(.enabled)
+                VStack(spacing: 18) {
+                    Text(summary.wasCancelled ? L10n.tr("已停止", "Stopped", "Остановлено")
+                         : summary.errorCount > 0 ? L10n.tr("已完成，但有问题", "Done, with a few problems", "Готово, но с ошибками")
+                         : L10n.tr("全部完成", "All done", "Готово"))
+                        .font(TypeScale.resultsHeadline)
+                        .matchedTemplate("title", in: morph)
+                    HStack(spacing: 50) {
+                        doneMetric(FileSizeFormatter.format(summary.freedBytes), caption: L10n.tr("已释放", "freed", "освобождено"))
+                        doneMetric("0", caption: L10n.tr("已移除威胁", "threats removed", "угроз удалено"))
+                        doneMetric("\(breakdown.count)", caption: L10n.tr("已运行任务", "tasks run", "задач выполнено"))
                     }
-                    Button(L10n.tr("查看日志", "View Log", "Журнал")) { showActivityLog = true }
-                        .buttonStyle(.bordered)
+                    if summary.errorCount > 0 {
+                        Button(L10n.tr("查看日志", "View Log", "Открыть журнал")) { showActivityLog = true }
+                            .buttonStyle(.ghostPill)
+                    }
+                    Button(L10n.tr("撤销清理…", "Undo cleanup…", "Отменить очистку…")) {
+                        appState.selectedSidebarItem = SidebarItem.activityItem
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color(hex: 0x5CC8F0))
+                    .help("Items moved to the Trash can be put back from Activity.")
                 }
-                .frame(maxWidth: 420, alignment: .leading)
+                .foregroundStyle(TypeScale.primaryText)
+                .frame(width: space.geometry.content.width)
+                .offset(y: space.y(0.36))
+
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("重新开始", "Start Over", "Начать заново"), action: resetScan)
+                }
             }
-            Text(L10n.tr(
-                "以上仅显示已完成的操作。移到废纸篓的项目可从清理历史恢复。请重新扫描以查看剩余或重新生成的文件。",
-                "Only completed operations are shown above. Items moved to Trash can be restored from cleanup history. Scan again to review remaining or regenerated files.",
-                "Выше показаны только выполненные операции. Объекты в Корзине можно восстановить из истории очистки. Повторите сканирование, чтобы проверить оставшиеся или заново созданные файлы."))
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
-            if askForSupport { SupportCard() }
-            Button(L10n.tr("完成", "Done", "Готово")) { resetScan() }
-                .buttonStyle(.bordered)
-                .tint(.primary)
-                .controlSize(.large)
-            Spacer()
         }
-        .padding(.horizontal, 40)
     }
 
-    private func recentlyCleanedDetail(_ row: SmartScanCleanup.RecentlyCleanedRow) -> String {
-        // The engine measures directories recursively at cleanup time, while
-        // scan metadata may contain only the directory entry's size. Keep the
-        // factual total above; don't present stale per-module scan estimates
-        // as a breakdown of that total.
-        return CleanupStrings.itemCount(row.itemCount)
+    private func doneMetric(_ value: String, caption: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(TypeScale.bigMetric).numericRoll(value)
+            Text(caption).font(.system(size: 11)).foregroundStyle(TypeScale.tertiaryText)
+        }
+        .staggerIn(1)
     }
 
     private func resetScan() {
@@ -515,24 +514,6 @@ struct SmartScanView: View {
         completedModules = []
         currentModuleName = ""
         scanState = .idle
-    }
-
-    // MARK: - Components
-
-    private func resultPill(icon: String, label: String, value: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 22))
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .opacity(0.7)
-            Text(value)
-                .font(.system(size: 13, weight: .semibold))
-        }
-        .foregroundStyle(.primary)
-        .frame(width: 110, height: 90)
-        .background(.primary.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Actions
@@ -660,6 +641,141 @@ struct SmartScanView: View {
             )
             askForSupport = !summary.wasCancelled && SupportAskLedger.shared.shouldAsk(for: summary)
             scanState = .done(summary: summary, breakdown: breakdown)
+        }
+    }
+}
+
+/// One Checkup area on the results screen (UI_SPEC §5.1): art, title with a
+/// tri-state checkbox and hover popover (A33), description, big metric,
+/// caption and "Review Details…". While running, the metric becomes a
+/// mini progress ring.
+private struct CheckupColumn: View {
+    let area: SmartScanView.Area
+    let results: [ScanResult]
+    @Binding var selectedItems: Set<URL>
+    let workingProgress: Double?
+    let onReview: (() -> Void)?
+
+    @State private var hovering = false
+    @State private var showPopover = false
+    @State private var hoverTask: Task<Void, Never>?
+    @State private var hoveringPopover = false
+
+    private var urls: [URL] { results.flatMap { $0.items.map(\.url) } }
+    private var selectedBytes: UInt64 { results.selectedSize(selectedItems) }
+    private var state: CheckState {
+        let all = urls
+        guard !all.isEmpty else { return .off }
+        let count = all.filter(selectedItems.contains).count
+        return count == 0 ? .off : (count == all.count ? .on : .mixed)
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: area.art)
+                .font(.system(size: 64, weight: .light))
+                .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)], startPoint: .top, endPoint: .bottom))
+                .shadow(color: .black.opacity(0.25), radius: 10, y: 6)
+                .frame(height: 120)
+
+            HStack(spacing: 6) {
+                TriStateCheckbox(state: state) { toggle() }
+                    .disabled(urls.isEmpty)
+                Text(area.title)
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .onHover(perform: hover)
+            .popover(isPresented: $showPopover, arrowEdge: .bottom) { popover }
+
+            Text(area.blurb)
+                .font(.system(size: 11))
+                .foregroundStyle(TypeScale.tertiaryText)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 170)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Group {
+                if let workingProgress, state != .off {
+                    ZStack {
+                        Circle().stroke(.white.opacity(0.18), lineWidth: 3)
+                        Circle().trim(from: 0, to: workingProgress)
+                            .stroke(Color(hex: 0xA8E6FF), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .animation(Motion.progress, value: workingProgress)
+                    }
+                    .frame(width: 40, height: 40)
+                } else if urls.isEmpty {
+                    Text(L10n.tr("良好", "Clear", "Чисто"))
+                        .font(TypeScale.bigMetric)
+                        .foregroundStyle(Color(hex: 0x5EE6A0))
+                } else {
+                    CountUpBytes(bytes: selectedBytes)
+                }
+            }
+            .frame(height: 52)
+
+            Text(urls.isEmpty ? "Nothing to do here" : L10n.tr("已选择", "selected", "выбрано"))
+                .font(.system(size: 11))
+                .foregroundStyle(TypeScale.tertiaryText)
+
+            if let onReview, !urls.isEmpty {
+                Button(L10n.tr("查看详情…", "Review Details…", "Подробнее…"), action: onReview)
+                    .buttonStyle(.ghostPill)
+            }
+        }
+        .foregroundStyle(TypeScale.primaryText)
+    }
+
+    private func toggle() {
+        if state == .on { selectedItems.subtract(urls) } else { selectedItems.formUnion(urls) }
+    }
+
+    /// A33: open after a 250 ms hover; close shortly after the pointer has
+    /// left both the title and the popover.
+    private func hover(_ inside: Bool) {
+        hoverTask?.cancel()
+        guard !results.isEmpty else { return }
+        hovering = inside
+        hoverTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(inside ? 250 : 350))
+            guard !Task.isCancelled else { return }
+            if inside { showPopover = true }
+            else if !hoveringPopover { showPopover = false }
+        }
+    }
+
+    private var popover: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(area.blurb)
+                .font(.system(size: 12))
+            ForEach(results, id: \.category) { result in
+                let resultURLs = result.items.map(\.url)
+                let selected = resultURLs.filter(selectedItems.contains).count
+                HStack(spacing: 8) {
+                    TriStateCheckbox(state: selected == 0 ? .off : (selected == resultURLs.count ? .on : .mixed), size: 14) {
+                        if selected == resultURLs.count { selectedItems.subtract(resultURLs) }
+                        else { selectedItems.formUnion(resultURLs) }
+                    }
+                    Text(result.category.displayName).font(.system(size: 12))
+                    Spacer(minLength: 12)
+                    Text(result.formattedSize).font(.system(size: 12).monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            if let onReview {
+                Button(L10n.tr("查看详情…", "Review Details…", "Подробнее…")) {
+                    showPopover = false
+                    onReview()
+                }
+                .buttonStyle(.ghostPill)
+            }
+        }
+        .padding(12)
+        .frame(width: 280)
+        .clean1PopoverSurface()
+        .onHover { inside in
+            hoveringPopover = inside
+            if !inside && !hovering { hover(false) }
         }
     }
 }

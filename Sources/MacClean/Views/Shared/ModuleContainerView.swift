@@ -50,6 +50,15 @@ struct ModuleContainerView: View {
     /// Duplicates module sets "Consolidate" when in consolidate mode so the
     /// button reflects that it clones rather than deletes.
     let actionLabel: String?
+    /// Optional control under the intro bullets ("Configure…", disk picker).
+    let introControl: AnyView?
+    /// "Last scan …" line on the intro.
+    let lastScan: String?
+    /// Hero animation while scanning (A9 sweep, or A16 radar for Malware).
+    let scanningMotion: TemplateHero.Motion
+    /// Verdict-type results (UI_SPEC §4.3 B) instead of the size summary.
+    let verdict: [VerdictTemplate.Metric]?
+    let verdictCaption: String?
 
     init(
         title: String,
@@ -72,7 +81,12 @@ struct ModuleContainerView: View {
         onGrantAccess: (() -> Void)? = nil,
         confirmEmptyTrash: Bool = false,
         resultsContent: (() -> AnyView)? = nil,
-        actionLabel: String? = nil
+        actionLabel: String? = nil,
+        introControl: AnyView? = nil,
+        lastScan: String? = nil,
+        scanningMotion: TemplateHero.Motion = .scanning,
+        verdict: [VerdictTemplate.Metric]? = nil,
+        verdictCaption: String? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -95,6 +109,11 @@ struct ModuleContainerView: View {
         self.confirmEmptyTrash = confirmEmptyTrash
         self.resultsContent = resultsContent
         self.actionLabel = actionLabel
+        self.introControl = introControl
+        self.lastScan = lastScan
+        self.scanningMotion = scanningMotion
+        self.verdict = verdict
+        self.verdictCaption = verdictCaption
     }
 
     @State private var showLargeSelectionConfirm = false
@@ -205,7 +224,8 @@ struct ModuleContainerView: View {
                 progress: cleaning.fraction,
                 onStop: onCancelClean)
         } else if isScanning {
-            ScanningTemplate(intro: intro, palette: palette, path: scanPhase, progress: scanProgress)
+            ScanningTemplate(intro: intro, palette: palette, path: scanPhase, progress: scanProgress,
+                             heroMotion: scanningMotion)
         } else if !results.isEmpty {
             if showReview {
                 ReviewTemplate(
@@ -213,6 +233,15 @@ struct ModuleContainerView: View {
                     customContent: resultsContent,
                     actionLabel: actionLabel ?? L10n.tr("清理", "Clean", "Очистить"),
                     onBack: { showReview = false },
+                    onAct: requestClean)
+            } else if let verdict {
+                VerdictTemplate(
+                    intro: intro, palette: palette, metrics: verdict,
+                    reviewCaption: verdictCaption,
+                    actionLabel: actionLabel ?? L10n.tr("移除", "Remove", "Удалить"),
+                    primaryMeta: selectedCount > 0 ? formattedSelectedSize : nil,
+                    canAct: selectedCount > 0,
+                    onReview: { showReview = true },
                     onAct: requestClean)
             } else {
                 ResultsTemplate(
@@ -229,7 +258,12 @@ struct ModuleContainerView: View {
                 EmptyTemplate(title: emptyMessage, intro: intro, palette: palette, onDone: onReset)
             }
         } else {
-            IntroTemplate(title: title, intro: intro, palette: palette, onPrimary: onScan)
+            if let introControl {
+                IntroTemplate(title: title, intro: intro, palette: palette, lastScan: lastScan,
+                              control: { introControl }, onPrimary: onScan)
+            } else {
+                IntroTemplate(title: title, intro: intro, palette: palette, lastScan: lastScan, onPrimary: onScan)
+            }
         }
     }
 
