@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MacCleanKit
 
@@ -10,141 +11,173 @@ struct ShredderView: View {
 
     private let eraser = SecureEraser()
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("文件粉碎", "Shredder", "Уничтожение файлов"))
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr("安全擦除文件，使其无法恢复", "Securely erase files beyond recovery", "Безопасно стирайте файлы без возможности восстановления"))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.primary.opacity(0.7))
-                }
-                Spacer()
-            }
-            .padding(20)
+    @State private var dropTargeted = false
+    @State private var confirmShred = false
+    @Namespace private var morph
 
-            Spacer()
+    private var stateKey: String {
+        result != nil ? "done" : isProcessing ? "working" : filesToShred.isEmpty ? "intro" : "list"
+    }
 
-            if let result {
-                VStack(spacing: 16) {
-                    Image(systemName: result.errors.isEmpty
-                          ? "checkmark.circle.fill"
-                          : "exclamationmark.triangle.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(result.errors.isEmpty ? Color.primary : Color.orange)
-                    Text(L10n.tr("已擦除 \(result.erasedCount) 个文件", "\(result.erasedCount) files erased", "\(result.erasedCount) \(L10n.russianPlural(result.erasedCount, one: "файл удалён", few: "файла удалено", many: "файлов удалено"))"))
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Text(FileSizeFormatter.format(result.totalSize))
-                        .font(.system(size: 14))
-                        .foregroundStyle(.primary.opacity(0.7))
-
-                    if let firstError = result.errors.first?.1 {
-                        Text(firstError)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary.opacity(0.75))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                            .textSelection(.enabled)
-
-                        if result.errors.count > 1 {
-                            Text(L10n.tr(
-                                "以及另外 \(result.errors.count - 1) 个错误",
-                                "And \(result.errors.count - 1) more error\(result.errors.count == 2 ? "" : "s")",
-                                "И ещё \(result.errors.count - 1) \(L10n.russianPlural(result.errors.count - 1, one: "ошибка", few: "ошибки", many: "ошибок"))"))
-                                .font(.system(size: 12))
-                                .foregroundStyle(.primary.opacity(0.6))
-                        }
-                    }
-
-                    Button(L10n.tr("完成", "Done", "Готово")) {
-                        self.result = nil
-                        filesToShred = []
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                }
-            } else if isProcessing {
-                ProgressView(L10n.tr("正在粉碎文件...", "Shredding files...", "Уничтожение файлов..."))
-                    .foregroundStyle(.primary)
-                    .tint(.primary)
-            } else if filesToShred.isEmpty {
-                VStack(spacing: 20) {
-                    Image(systemName: "scissors")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.primary.opacity(0.5))
-
-                    Text(L10n.tr("将文件拖放到此处进行粉碎", "Drop files here to shred them", "Перетащите сюда файлы для уничтожения"))
-                        .font(.system(size: 16))
-                        .foregroundStyle(.primary.opacity(0.6))
-
-                    Button(L10n.tr("选择文件", "Select Files", "Выбрать файлы")) {
-                        selectFiles()
-                    }
-                    .buttonStyle(SuperEllipseButtonStyle(
-                        gradient: ModuleTheme.files.gradient,
-                        size: CGSize(width: 140, height: 44)
-                    ))
-
-                    // Erase mode picker
-                    Picker(L10n.tr("模式", "Mode", "Режим"), selection: $eraseMode) {
-                        Text(L10n.tr("移到废纸篓", "Move to Trash", "В Корзину")).tag(SecureEraser.EraseMode.standard)
-                        Text(L10n.tr("永久删除", "Permanent Delete", "Безвозвратно")).tag(SecureEraser.EraseMode.permanent)
-                        Text(L10n.tr("安全擦除", "Secure Erase", "С перезаписью")).tag(SecureEraser.EraseMode.secure)
-                    }
-                    .pickerStyle(.segmented)
-                    // Hidden visually, kept for VoiceOver. Rendered inline,
-                    // the label gets width-starved by the fixed 360pt frame
-                    // (segments consume it all) and wraps one letter per
-                    // line into a vertical "M o d e".
-                    .labelsHidden()
-                    .frame(width: 360)
-                    .padding(.top, 8)
-                }
-            } else {
-                VStack(spacing: 16) {
-                    Text(L10n.tr("已选择 \(filesToShred.count) 个文件", "\(filesToShred.count) files selected", "\(L10n.russianPlural(filesToShred.count, one: "Выбран", few: "Выбрано", many: "Выбрано")) \(filesToShred.count) \(L10n.russianPlural(filesToShred.count, one: "файл", few: "файла", many: "файлов"))"))
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-
-                    List(filesToShred, id: \.self) { url in
-                        HStack {
-                            Image(systemName: "doc")
-                            Text(url.lastPathComponent)
-                                .lineLimit(1)
-                            Spacer()
-                            Button {
-                                filesToShred.removeAll { $0 == url }
-                            } label: {
-                                Image(systemName: "xmark.circle")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .listStyle(.inset)
-                    .frame(maxHeight: 200)
-                    .background {
-                        if removeBackgroundColors { Color.clear }
-                        else { Rectangle().fill(.ultraThinMaterial) }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(.horizontal, 40)
-
-                    Button(L10n.tr("粉碎", "Shred", "Уничтожить")) {
-                        shred()
-                    }
-                    .buttonStyle(SuperEllipseButtonStyle(
-                        gradient: LinearGradient(colors: [.red, .orange], startPoint: .leading, endPoint: .trailing),
-                        size: CGSize(width: 140, height: 44)
-                    ))
-                }
-            }
-
-            Spacer()
+    private var totalSize: UInt64 {
+        filesToShred.reduce(UInt64(0)) { total, url in
+            total + UInt64((try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey]).totalFileAllocatedSize) ?? 0)
         }
+    }
+
+    private var modeLabel: String {
+        switch eraseMode {
+        case .standard: L10n.tr("移到废纸篓", "Move to Trash", "В Корзину")
+        case .permanent: L10n.tr("永久删除", "Permanent Delete", "Безвозвратно")
+        case .secure: L10n.tr("安全擦除", "Secure Erase", "С перезаписью")
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            content
+                .id(stateKey)
+                .transition(TemplateMotion.stateTransition)
+        }
+        .animation(TemplateMotion.morph, value: stateKey)
+        .environment(\.templateNamespace, morph)
+        // A34: the whole module area takes dropped files.
+        .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url else { return }
+                    Task { @MainActor in
+                        result = nil
+                        if !filesToShred.contains(url) { filesToShred.append(url) }
+                    }
+                }
+            }
+            return true
+        }
+        .overlay {
+            if dropTargeted {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
+                    .padding(8)
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: dropTargeted)
+        .alert(L10n.tr("粉碎 \(filesToShred.count) 个项目？", "Shred \(filesToShred.count) item\(filesToShred.count == 1 ? "" : "s")?", "Уничтожить \(filesToShred.count)?"),
+               isPresented: $confirmShred) {
+            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) {}
+            Button(L10n.tr("粉碎", "Shred", "Уничтожить"), role: .destructive) { shred() }
+        } message: {
+            Text("This can't be undone. On SSDs, deleted data can't be guaranteed unrecoverable. \(MCConstants.appName) removes the file and frees its blocks.")
+        }
+        .moduleStage(isProcessing ? .working : (result != nil ? .results : .idle))
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let result {
+            DoneTemplate(
+                title: L10n.tr("已擦除 \(result.erasedCount) 个文件", "\(result.erasedCount) item\(result.erasedCount == 1 ? "" : "s") shredded", "Уничтожено: \(result.erasedCount)"),
+                subtitle: FileSizeFormatter.format(result.totalSize),
+                palette: .shredder,
+                isWarning: !result.errors.isEmpty,
+                extra: {
+                    if let firstError = result.errors.first?.1 {
+                        Text(firstError + (result.errors.count > 1 ? " (+\(result.errors.count - 1) more)" : ""))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .textSelection(.enabled)
+                    }
+                },
+                onDone: {
+                    self.result = nil
+                    filesToShred = []
+                })
+            .overlay {
+                if result.errors.isEmpty { ShredConfetti().allowsHitTesting(false) }
+            }
+        } else if isProcessing {
+            ScanningTemplate(title: L10n.tr("正在粉碎…", "Shredding…", "Уничтожение…"),
+                             intro: SidebarItem.shredder.intro, palette: .shredder,
+                             path: filesToShred.first?.lastPathComponent, progress: 0.5)
+        } else if filesToShred.isEmpty {
+            IntroTemplate(title: L10n.tr("文件粉碎", "Shredder", "Уничтожение файлов"),
+                          intro: SidebarItem.shredder.intro, palette: .shredder,
+                          primaryMeta: dropTargeted ? "Drop to add" : "or drop files here",
+                          control: { modePicker },
+                          onPrimary: selectFiles)
+                .scaleEffect(dropTargeted ? 1.02 : 1)
+                .offset(y: dropTargeted ? -8 : 0)
+                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: dropTargeted)
+        } else {
+            fileList
+        }
+    }
+
+    private var modePicker: some View {
+        Picker(L10n.tr("模式", "Mode", "Режим"), selection: $eraseMode) {
+            Text(L10n.tr("移到废纸篓", "Move to Trash", "В Корзину")).tag(SecureEraser.EraseMode.standard)
+            Text(L10n.tr("永久删除", "Permanent Delete", "Безвозвратно")).tag(SecureEraser.EraseMode.permanent)
+            Text(L10n.tr("安全擦除", "Secure Erase", "С перезаписью")).tag(SecureEraser.EraseMode.secure)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 320)
+    }
+
+    private var fileList: some View {
+        CardSpaceReader { space in
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.tr("已选择 \(filesToShred.count) 个文件", "\(filesToShred.count) item\(filesToShred.count == 1 ? "" : "s") to shred", "Выбрано: \(filesToShred.count)"))
+                    .font(TypeScale.reviewTitle)
+                HStack {
+                    modePicker
+                    Spacer()
+                    Button(L10n.tr("添加文件…", "Add Files…", "Добавить…"), action: selectFiles).buttonStyle(.ghostPill)
+                }
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(filesToShred.enumerated()), id: \.element) { index, url in
+                            HStack(spacing: 10) {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                    .resizable().frame(width: 20, height: 20)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(url.lastPathComponent).font(TypeScale.row).lineLimit(1)
+                                    Text(url.deletingLastPathComponent().path(percentEncoded: false))
+                                        .font(.system(size: 11)).foregroundStyle(TypeScale.tertiaryText)
+                                        .lineLimit(1).truncationMode(.middle)
+                                }
+                                Spacer(minLength: 8)
+                                Button {
+                                    filesToShred.removeAll { $0 == url }
+                                } label: {
+                                    Image(systemName: "xmark.circle").foregroundStyle(TypeScale.secondaryText)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(L10n.tr("移除", "Remove from list", "Убрать"))
+                            }
+                            .padding(.horizontal, 10)
+                            .frame(height: 36)
+                            .staggerIn(index)
+                        }
+                    }
+                }
+                .cardList()
+            }
+            .foregroundStyle(TypeScale.primaryText)
+            .padding(.top, 8)
+            .padding(.bottom, space.buttonReserve)
+            .overlay {
+                PrimarySlot {
+                    PrimaryButton(label: L10n.tr("粉碎", "Shred", "Уничтожить"),
+                                  meta: FileSizeFormatter.format(totalSize) + " · " + modeLabel, tint: .pink) {
+                        confirmShred = true
+                    }
+                }
+            }
+        }
+        .topBarBack(L10n.tr("返回", "Back", "Назад")) { filesToShred = [] }
     }
 
     private func selectFiles() {
@@ -154,7 +187,8 @@ struct ShredderView: View {
         panel.canChooseFiles = true
 
         if panel.runModal() == .OK {
-            filesToShred = panel.urls
+            result = nil
+            filesToShred = Array(Set(filesToShred + panel.urls)).sorted { $0.path < $1.path }
         }
     }
 
@@ -163,6 +197,38 @@ struct ShredderView: View {
         Task {
             result = await eraser.erase(urls: filesToShred, mode: eraseMode)
             isProcessing = false
+        }
+    }
+}
+
+/// A23: 40 small squares burst and fall away, 0.9 s.
+private struct ShredConfetti: View {
+    @State private var start = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.cardGeometry) private var geometry
+
+    var body: some View {
+        if !reduceMotion {
+            TimelineView(.animation) { context in
+                let t = context.date.timeIntervalSince(start)
+                Canvas { ctx, size in
+                    guard t < 0.9 else { return }
+                    let origin = CGPoint(x: 0.76 * geometry.card.width - geometry.content.minX,
+                                         y: 0.45 * geometry.card.height - geometry.content.minY)
+                    for i in 0..<40 {
+                        let seed = Double(i) * 12.9898
+                        let angle = (seed.truncatingRemainder(dividingBy: 6.283))
+                        let speed = 80 + (seed * 7).truncatingRemainder(dividingBy: 120)
+                        let x = origin.x + cos(angle) * speed * t
+                        let y = origin.y + sin(angle) * speed * t * 0.6 + 260 * t * t
+                        let alpha = max(0, 1 - t / 0.9)
+                        let colors: [Color] = [.white, Color(hex: 0x5CC8F0), Color(hex: 0xF3A3C7), Color(hex: 0xF8C04E)]
+                        ctx.fill(Path(CGRect(x: x, y: y, width: 6, height: 6)),
+                                 with: .color(colors[i % colors.count].opacity(alpha)))
+                    }
+                }
+            }
+            .onAppear { start = Date() }
         }
     }
 }

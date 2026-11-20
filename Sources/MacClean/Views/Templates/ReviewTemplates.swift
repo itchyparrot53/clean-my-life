@@ -424,3 +424,61 @@ private struct OptionalBack: ViewModifier {
         }
     }
 }
+
+// MARK: - Intro gate
+
+/// Intro first, then the module's own list (UI_SPEC §4.6): the list gets
+/// "‹ Intro" in the top bar, Esc goes back, and the sidebar focuses (A31).
+struct IntroGate<Control: View, Content: View>: View {
+    let item: SidebarItem
+    var title: String { item.title }
+    var primaryMeta: String?
+    var focusSidebar = true
+    @Binding var showContent: Bool
+    @ViewBuilder var control: Control
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ZStack {
+            if showContent {
+                content
+                    .topBarBack(L10n.tr("简介", "Intro", "Введение")) { showContent = false }
+                    .topBarTitle(title)
+                    .onExitCommand { showContent = false }
+                    .modifier(FocusIf(on: focusSidebar))
+                    .transition(TemplateMotion.stateTransition)
+            } else {
+                IntroTemplate(title: title, intro: item.intro, palette: item.palette,
+                              primaryMeta: primaryMeta, control: { control },
+                              onPrimary: { showContent = true })
+                    .transition(TemplateMotion.stateTransition)
+            }
+        }
+        .animation(TemplateMotion.morph, value: showContent)
+    }
+}
+
+extension IntroGate where Control == EmptyView {
+    init(item: SidebarItem, primaryMeta: String? = nil, focusSidebar: Bool = true,
+         showContent: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.init(item: item, primaryMeta: primaryMeta, focusSidebar: focusSidebar,
+                  showContent: showContent, control: { EmptyView() }, content: content)
+    }
+}
+
+private struct FocusIf: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+        if on { content.sidebarMode(.focused) } else { content }
+    }
+}
+
+/// Mac Sai's own List-based content, blended onto the card.
+extension View {
+    func cardList() -> some View {
+        self
+            .scrollContentBackground(.hidden)
+            .background(Color.black.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}

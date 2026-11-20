@@ -13,6 +13,11 @@ struct LargeOldFilesView: View {
     @State private var cleaning: CleaningEngine.Progress?
     @State private var cleanTask: Task<Void, Never>?
 
+    /// Where to look (UI_SPEC §4.1 disk picker). The startup disk means your
+    /// home folder and Downloads, as before; other disks and folders are
+    /// scanned from their root.
+    @State private var location = ScanLocation.volumes().first ?? .home
+
     var body: some View {
         ModuleContainerView(
             title: L10n.tr("大文件与旧文件", "Large & Old Files", "Большие и старые файлы"),
@@ -30,7 +35,9 @@ struct LargeOldFilesView: View {
             onScan: scan,
             onClean: clean,
             onCancelClean: { cleanTask?.cancel() },
-            onReset: reset
+            onReset: reset,
+            actionLabel: L10n.tr("移除", "Remove", "Удалить"),
+            introControl: AnyView(DiskPicker(selection: $location))
         )
         .onAppear {
             if let e = appState.scanResultsStore.entry(for: .largeOldFiles) {
@@ -65,7 +72,7 @@ struct LargeOldFilesView: View {
             scanPhase = L10n.tr("正在检查文件大小...", "Checking file sizes...", "Проверка размеров файлов...")
             scanProgress = 0.45
 
-            let module = LargeOldFilesModule()
+            let module = LargeOldFilesModule(root: location.url.path == "/" ? nil : location.url)
             async let scanTask = module.scan()
 
             try? await Task.sleep(for: .milliseconds(400))

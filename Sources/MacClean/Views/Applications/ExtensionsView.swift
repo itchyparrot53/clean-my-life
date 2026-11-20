@@ -12,59 +12,52 @@ struct ExtensionsView: View {
     @State private var errorMessage: String?
     private let client = ManagedExtensionsClient.live()
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("扩展", "Extensions", "Расширения"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr(
-                        "查看第三方偏好设置面板、Internet 插件和 Safari 扩展。用户安装的面板和插件可移到废纸篓。",
-                        "Review third-party preference panes, Internet Plug-Ins, and Safari extensions. User-installed panes and plug-ins can go to the Trash.",
-                        "Просматривайте сторонние панели настроек, интернет-плагины и расширения Safari. Установленные пользователем панели и плагины можно переместить в Корзину."
-                    ))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.primary.opacity(0.6))
-                }
-                Spacer()
-                Button {
-                    Task { await reload() }
-                } label: {
-                    Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
-                }
-                .disabled(isLoading || isRemoving)
-                .help(L10n.tr("重新读取扩展列表", "Reload the extension list", "Заново прочитать список расширений"))
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+    @State private var showList = false
+    @State private var kindFilter = "all"
 
-            Group {
-                if isLoading {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        ProgressView()
-                            .controlSize(.large)
-                            .tint(.primary)
-                        Text(L10n.tr("正在查找扩展…", "Looking for extensions…", "Поиск расширений…"))
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary.opacity(0.6))
-                        Spacer()
+    private func kindID(_ kind: ManagedExtensionKind) -> String { String(describing: kind) }
+
+    private func shows(_ kind: ManagedExtensionKind) -> Bool {
+        kindFilter == "all" || kindFilter == kindID(kind)
+    }
+
+    private var filterGroups: [FilterGroup] {
+        let kinds: [(ManagedExtensionKind, String)] = [
+            (.safariExtension, L10n.tr("Safari 扩展", "Safari Extensions", "Расширения Safari")),
+            (.internetPlugin, L10n.tr("Internet 插件", "Internet Plug-Ins", "Интернет-плагины")),
+            (.preferencePane, L10n.tr("偏好设置面板", "Preference Panes", "Панели настроек")),
+        ]
+        return [FilterGroup(id: "kinds", items:
+            [FilterItem(id: "all", title: L10n.tr("全部", "All Extensions", "Все"), count: items.count)]
+            + kinds.map { kind, title in
+                FilterItem(id: kindID(kind), title: title, count: items.filter { $0.kind == kind }.count)
+            })]
+    }
+
+    var body: some View {
+        IntroGate(item: .extensions, primaryMeta: isLoading ? nil : "\(items.count) found",
+                  showContent: $showList) {
+            ListFirstTemplate(
+                groups: filterGroups, selectedFilter: $kindFilter,
+                title: filterGroups[0].items.first { $0.id == kindFilter }?.title ?? "",
+                description: "Plug-ins and panes you installed can go to the Trash. Safari extensions are managed in Safari.",
+                trailingHeader: {
+                    Button { Task { await reload() } } label: {
+                        Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
                     }
-                    // Fill the card like the list does; otherwise the container
-                    // shrinks to the text width instead of the fixed page width.
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    list
-                }
-            }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+                    .buttonStyle(.ghostPill)
+                    .disabled(isLoading || isRemoving)
+                },
+                list: {
+                    Group {
+                        if isLoading {
+                            ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            list
+                        }
+                    }
+                    .cardList()
+                })
         }
         .task { await reload() }
         .respondsToModuleShortcuts(
@@ -120,26 +113,26 @@ struct ExtensionsView: View {
                 // Only show a section that actually has items, so empty
                 // categories don't read as "the feature found nothing / is
                 // broken". The whole-empty case is handled above.
-                if items.contains(where: { $0.kind == .preferencePane }) {
+                if shows(.preferencePane), items.contains(where: { $0.kind == .preferencePane }) {
                     section(
                         kind: .preferencePane,
                         title: L10n.tr("偏好设置面板", "Preference Panes", "Панели настроек"),
                         icon: "slider.horizontal.3"
                     )
                 }
-                if items.contains(where: { $0.kind == .internetPlugin }) {
+                if shows(.internetPlugin), items.contains(where: { $0.kind == .internetPlugin }) {
                     section(
                         kind: .internetPlugin,
                         title: L10n.tr("Internet 插件", "Internet Plug-Ins", "Интернет-плагины"),
                         icon: "puzzlepiece.extension"
                     )
                 }
-                if items.contains(where: { $0.kind == .safariExtension }) {
+                if shows(.safariExtension), items.contains(where: { $0.kind == .safariExtension }) {
                     safariSection
                 }
             }
         }
-        .listStyle(.inset)
+        .listStyle(.plain)
     }
 
     private var safariSection: some View {

@@ -12,20 +12,18 @@ struct UnusedAppsView: View {
 
     private var apps: [UnusedAppRecord] { UnusedApps.unused(from: records, horizon: horizon) }
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .unusedApps, primaryMeta: nil, focusSidebar: false,
+                  showContent: $showList) {
+            legacyContent
+        }
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("未使用的应用", "Unused Apps", "Неиспользуемые приложения"))
-                        .font(.system(size: 22, weight: .bold))
-                    Text(L10n.tr(
-                        "按上次打开时间列出应用，并按占用空间排序。一键转到卸载器。",
-                        "Apps you have not opened recently, sorted by how much space they use. One click hands them to the Uninstaller.",
-                        "Приложения, которые давно не открывали, отсортированные по занятому месту. Одним нажатием можно перейти к удалению."
-                    ))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 Picker(L10n.tr("时间", "Horizon", "Период"), selection: $horizon) {
                     ForEach(UnusedAppHorizon.allCases) { h in

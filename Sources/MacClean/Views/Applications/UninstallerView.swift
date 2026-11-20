@@ -72,63 +72,44 @@ struct UninstallerView: View {
         }
     }
 
+    @State private var showList = false
+
+    private var filterGroups: [FilterGroup] {
+        [FilterGroup(id: "apps", items: [
+            FilterItem(id: AppFilter.all.rawValue, title: L10n.tr("所有应用", "All Applications", "Все приложения"), count: apps.count),
+            FilterItem(id: AppFilter.unused.rawValue, title: L10n.tr("未使用", "Unused", "Неиспользуемые"), count: apps.filter(\.isUnused).count),
+            FilterItem(id: AppFilter.thirdParty.rawValue, title: L10n.tr("第三方", "Third-Party", "Сторонние"), count: apps.filter { !$0.isAppleApp }.count),
+        ])]
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("卸载器", "Uninstaller", "Удаление приложений"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr("彻底移除应用及其残留文件", "Completely remove apps and their leftover files", "Полностью удаляйте приложения и оставшиеся после них файлы"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-
-            if isLoading {
-                Spacer()
-                VStack(spacing: 12) {
-                    ProgressView()
-                        .controlSize(.large)
-                        .tint(.primary)
-                    Text(L10n.tr("正在发现已安装应用...", "Discovering installed apps...", "Поиск установленных приложений..."))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
-                Spacer()
-            } else {
-                HStack(spacing: 10) {
-                    TextField(L10n.tr("搜索应用...", "Search apps...", "Поиск приложений..."), text: $searchText)
-                        .textFieldStyle(.roundedBorder)
-
-                    Picker(L10n.tr("筛选", "Filter", "Фильтр"), selection: $filter) {
-                        ForEach(AppFilter.allCases, id: \.self) { f in
-                            Text(f.label).tag(f)
+        IntroGate(item: .uninstaller, primaryMeta: isLoading ? nil : "\(apps.count) apps",
+                  showContent: $showList, control: {
+            Button(L10n.tr("选择应用…", "Choose Apps…", "Выбрать приложения…")) { showList = true }
+                .buttonStyle(.secondaryPill)
+        }, content: {
+            ListFirstTemplate(
+                groups: filterGroups,
+                selectedFilter: Binding(get: { filter.rawValue }, set: { filter = AppFilter(rawValue: $0) ?? .all }),
+                title: filterGroups[0].items.first { $0.id == filter.rawValue }?.title ?? "",
+                description: "Pick an app to see everything it installed. Removing moves it all to the Trash.",
+                trailingHeader: { EmptyView() },
+                list: {
+                    Group {
+                        if isLoading {
+                            ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            splitPanes
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 240)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 10)
-
-                splitPanes
-                .background {
-                    if removeBackgroundColors { Color.clear }
-                    else { Rectangle().fill(.ultraThinMaterial) }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
-        }
+                    .cardList()
+                })
+            .topBarSearch(text: $searchText, prompt: L10n.tr("搜索应用", "Search apps", "Поиск приложений"))
+        })
         .task { await loadApps() }
         .onChange(of: appState.pendingUninstallerAppPath) { _, path in
             guard let path else { return }
+            showList = true
             selectPendingApp(path: path)
         }
         // Attached to the top-level body (not the conditionally-rendered

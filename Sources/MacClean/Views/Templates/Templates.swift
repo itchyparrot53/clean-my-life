@@ -285,7 +285,7 @@ struct IntroTemplate<Control: View>: View {
                     }
                     .padding(.top, 28)
 
-                    if !(control is EmptyView) {
+                    if Control.self != EmptyView.self {
                         Rectangle()
                             .fill(Surface.hairline)
                             .frame(width: 0.25 * space.W, height: 1)

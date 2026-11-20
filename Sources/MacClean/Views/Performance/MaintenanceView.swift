@@ -14,27 +14,25 @@ struct MaintenanceView: View {
         case failed(String)
     }
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .maintenance, primaryMeta: nil, focusSidebar: false,
+                  showContent: $showList) {
+            legacyContent
+        }
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("维护", "Maintenance", "Обслуживание"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr("运行系统维护任务，让 Mac 保持健康", "Run system maintenance tasks to keep your Mac healthy", "Выполняйте задачи обслуживания, чтобы поддерживать Mac в хорошем состоянии"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 // Was "Run All" — but blanket-running every task in this
                 // module hides hours-long Spotlight/Launch-Services
                 // disruption behind a single click. Only fire-and-forget
                 // safe tasks now; advanced ones require per-task consent.
                 Button(L10n.tr("运行安全任务", "Run Safe Tasks", "Запустить безопасные задачи")) { runSafeTasks() }
-                    .buttonStyle(SuperEllipseButtonStyle(
-                        gradient: ModuleTheme.performance.buttonGradient,
-                        size: CGSize(width: 120, height: 34)
-                    ))
+                    .buttonStyle(.secondaryPill)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)

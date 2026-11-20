@@ -69,9 +69,13 @@ struct ResourceHogsView: View {
                                 pendingQuit = row
                                 showQuitConfirm = true
                             }
+                            .listRowBackground(Color.clear)
                         }
                     }
-                    .listStyle(.inset)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    // A18: rows glide to their new place when the order changes.
+                    .animation(.smooth, value: rows.map(\.id))
                 }
             }
         }

@@ -13,83 +13,81 @@ struct OptimizationView: View {
 
     private let manager = AutoStartManager()
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("优化", "Optimization", "Оптимизация"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr("查看占用 CPU 和内存的应用并强制退出", "See CPU and memory hogs and force-quit them", "Смотрите приложения с высокой нагрузкой и завершайте их"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
-                Spacer()
-                // The view is kept alive across navigation, so `.task` only runs
-                // once and the list would otherwise go stale (issue #93: rescans
-                // showed old data until the app was relaunched). This button
-                // re-reads login items and launch agents from disk on demand.
-                Button {
-                    refresh()
-                } label: {
-                    Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
-                }
-                .help(L10n.tr("重新扫描启动项", "Rescan startup items", "Повторно проверить объекты автозапуска"))
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+    @State private var showList = false
 
-            Picker(L10n.tr("分区", "Section", "Раздел"), selection: $selectedTab) {
-                Text(L10n.tr("占用资源", "Resource Hogs", "Нагрузка")).tag(0)
-                Text(L10n.tr("登录项", "Login Items", "Объекты входа")).tag(1)
-                Text(L10n.tr("启动代理", "Launch Agents", "Агенты запуска")).tag(2)
-                Text(L10n.tr("启动守护进程", "Launch Daemons", "Демоны запуска")).tag(3)
-                Text(L10n.tr("文件打开方式", "File Associations", "Связи файлов")).tag(4)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(.horizontal, 24)
-            .padding(.bottom, 10)
+    private var tabTitles: [(id: Int, title: String)] {
+        [
+            (0, L10n.tr("占用资源", "Heavy Consumers", "Нагрузка")),
+            (1, L10n.tr("登录项", "Login Items", "Объекты входа")),
+            (2, L10n.tr("启动代理", "Launch Agents", "Агенты запуска")),
+            (3, L10n.tr("启动守护进程", "Launch Daemons", "Демоны запуска")),
+            (4, L10n.tr("文件打开方式", "File Associations", "Связи файлов")),
+        ]
+    }
 
-            Group {
-                if selectedTab == 0 {
-                    ResourceHogsView()
-                } else if selectedTab == 4 {
-                    FileHandlerView()
-                } else if isLoading {
-                    VStack(spacing: 12) {
-                        Spacer()
-                        ProgressView()
-                            .controlSize(.large)
-                            .tint(.primary)
-                        Text(L10n.tr("正在加载项目...", "Loading items...", "Загрузка объектов..."))
-                            .font(.system(size: 13))
-                            .foregroundStyle(.primary.opacity(0.6))
-                        Spacer()
-                    }
-                } else {
-                    Group {
-                        switch selectedTab {
-                        case 1:  itemList(items: loginItems)
-                        case 2:  itemList(items: launchAgents)
-                        case 3:  itemList(items: launchDaemons)
-                        default: itemList(items: loginItems)
-                        }
-                    }
-                }
-            }
-            .background {
-                if removeBackgroundColors { Color.clear }
-                else { Rectangle().fill(.ultraThinMaterial) }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+    private var itemCount: Int { loginItems.count + launchAgents.count + launchDaemons.count }
+
+    private func count(for tab: Int) -> Int? {
+        switch tab {
+        case 1: loginItems.count
+        case 2: launchAgents.count
+        case 3: launchDaemons.count
+        default: nil
         }
+    }
+
+    var body: some View {
+        IntroGate(item: .optimization, primaryMeta: isLoading ? nil : "\(itemCount) items",
+                  showContent: $showList, control: {
+            Button("View All \(itemCount) Items…") { selectedTab = 1; showList = true }
+                .buttonStyle(.secondaryPill)
+        }, content: {
+            ListFirstTemplate(
+                groups: [FilterGroup(id: "kinds", items: tabTitles.map {
+                    FilterItem(id: String($0.id), title: $0.title, count: count(for: $0.id))
+                })],
+                selectedFilter: Binding(get: { String(selectedTab) }, set: { selectedTab = Int($0) ?? 0 }),
+                title: tabTitles[selectedTab].title,
+                description: description(for: selectedTab),
+                trailingHeader: {
+                    Button { refresh() } label: {
+                        Label(L10n.tr("刷新", "Refresh", "Обновить"), systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.ghostPill)
+                },
+                list: { tabContent.cardList() })
+        })
         .alert(alertMessage, isPresented: $showAlert) {
             Button("OK") { showAlert = false }
         }
         .task { refresh() }
+    }
+
+    private func description(for tab: Int) -> String {
+        switch tab {
+        case 0: "Apps using the most CPU and memory right now. Updates every couple of seconds."
+        case 1: "Apps that open when you log in."
+        case 2: "Helpers that run in the background for your user."
+        case 3: "System-wide helpers. Some belong to macOS and are locked."
+        default: "Which app opens each kind of file."
+        }
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        if selectedTab == 0 {
+            ResourceHogsView()
+        } else if selectedTab == 4 {
+            FileHandlerView()
+        } else if isLoading {
+            ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            switch selectedTab {
+            case 2: itemList(items: launchAgents)
+            case 3: itemList(items: launchDaemons)
+            default: itemList(items: loginItems)
+            }
+        }
     }
 
     // MARK: - Item List
@@ -124,7 +122,7 @@ struct OptimizationView: View {
                     })
                 }
             }
-            .listStyle(.inset)
+            .listStyle(.plain)
         }
     }
 

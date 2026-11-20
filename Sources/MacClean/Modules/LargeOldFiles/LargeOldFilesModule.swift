@@ -16,14 +16,26 @@ public struct LargeOldFilesModule: ScanModule {
     private let scanner = TargetedScanner()
     private let minSize: UInt64
     private let minAge: TimeInterval?
+    /// Clean1: a disk or folder chosen in the disk picker. nil = home + Downloads.
+    private let root: URL?
 
-    public init(minSize: UInt64 = 50 * 1024 * 1024, minAge: TimeInterval? = nil) {
+    public init(minSize: UInt64 = 50 * 1024 * 1024, minAge: TimeInterval? = nil, root: URL? = nil) {
         self.minSize = minSize
         self.minAge = minAge
+        self.root = root
     }
 
     public func scan() async -> [ScanResult] {
-        let targets = [
+        let targets = root.map { root in [
+            ScanTarget(
+                path: root,
+                recursive: true,
+                maxDepth: 8,
+                minAge: minAge,
+                minSize: minSize,
+                excludePatterns: [".Trashes", ".Spotlight-V100", ".fseventsd", ".git", "node_modules"]
+            ),
+        ] } ?? [
             ScanTarget(
                 path: MCConstants.home,
                 recursive: true,

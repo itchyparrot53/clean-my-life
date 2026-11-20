@@ -14,26 +14,29 @@ struct UpdaterView: View {
     private let discovery = AppDiscovery()
     private let checker = AppUpdateChecker()
 
+    @State private var showList = false
+
     var body: some View {
+        IntroGate(item: .updater, primaryMeta: hasChecked ? "\(updates.count) updates" : nil, focusSidebar: true,
+                  showContent: $showList) {
+            legacyContent
+        }
+        .onChange(of: showList) { _, open in
+            if open && !hasChecked && !isChecking { checkUpdates() }
+        }
+        .moduleStage(isChecking ? .working : (updates.isEmpty ? .idle : .results))
+        .sidebarBadge(updates.isEmpty ? nil : .updates(updates.count))
+    }
+
+    private var legacyContent: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("应用更新", "Updater", "Обновления"))
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Text(L10n.tr("检查可用的应用更新", "Check for available app updates", "Проверка доступных обновлений приложений"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.primary.opacity(0.6))
-                }
                 Spacer()
                 if !isChecking {
                     Button(hasChecked ? L10n.tr("重新检查", "Recheck", "Проверить снова") : L10n.tr("检查更新", "Check for Updates", "Проверить обновления")) {
                         checkUpdates()
                     }
-                    .buttonStyle(SuperEllipseButtonStyle(
-                        gradient: ModuleTheme.applications.buttonGradient,
-                        size: CGSize(width: hasChecked ? 100 : 160, height: 34)
-                    ))
+                    .buttonStyle(.secondaryPill)
                 }
             }
             .padding(.horizontal, 24)
@@ -105,8 +108,6 @@ struct UpdaterView: View {
                 Spacer()
             }
         }
-        .moduleStage(isChecking ? .working : (updates.isEmpty ? .idle : .results))
-        .sidebarBadge(updates.isEmpty ? nil : .updates(updates.count))
     }
 
     private func checkUpdates() {
