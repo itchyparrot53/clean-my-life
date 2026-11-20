@@ -113,6 +113,10 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 
 cp "${BUILD_DIR}/MacClean" "${APP_BUNDLE}/Contents/MacOS/"
+# Clean My Life brand images (SwiftPM resource bundle, read by BrandAssets).
+if [ -d "${BUILD_DIR}/MacClean_MacClean.bundle" ]; then
+    cp -R "${BUILD_DIR}/MacClean_MacClean.bundle" "${APP_BUNDLE}/Contents/Resources/"
+fi
 
 cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -207,6 +211,9 @@ mkdir -p "${MENU_APP}/Contents/MacOS"
 mkdir -p "${MENU_APP}/Contents/Resources"
 
 cp "${BUILD_DIR}/MacCleanMenu" "${MENU_APP}/Contents/MacOS/"
+if [ -d "${BUILD_DIR}/MacClean_MacCleanMenu.bundle" ]; then
+    cp -R "${BUILD_DIR}/MacClean_MacCleanMenu.bundle" "${MENU_APP}/Contents/Resources/"
+fi
 
 cat > "${MENU_APP}/Contents/Info.plist" << MENU_PLIST
 <?xml version="1.0" encoding="UTF-8"?>

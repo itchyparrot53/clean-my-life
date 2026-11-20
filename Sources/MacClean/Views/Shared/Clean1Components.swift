@@ -266,32 +266,38 @@ struct CategoryTile: View {
 struct HeroDisc: View {
     let palette: ModulePalette
     let symbol: String
+    /// Brand illustration; replaces the SF Symbol placeholder when present.
+    var artwork: String? = nil
     var diameter: CGFloat = CardLayout.heroDiameter
 
     var body: some View {
         ZStack {
+            // Brand kit disc: translucent white, radial 27 % → 9 %, 15 % rim,
+            // light from the top left; a soft glow in the module colour.
             Circle()
                 .fill(RadialGradient(
-                    colors: [palette.top.lightened(0.2), palette.top],
-                    center: .center, startRadius: 0, endRadius: diameter / 2))
-                .opacity(0.85)
-                .shadow(color: palette.top.opacity(0.4), radius: 40)
-            // Inner shadow: a soft dark rim fading inwards.
+                    colors: [.white.opacity(0.27), .white.opacity(0.09)],
+                    center: UnitPoint(x: 0.38, y: 0.32), startRadius: 0, endRadius: diameter / 2))
+                .shadow(color: palette.top.opacity(0.35), radius: 36)
             Circle()
-                .strokeBorder(
-                    RadialGradient(colors: [.clear, .black.opacity(0.18)],
-                                   center: .center, startRadius: diameter * 0.38, endRadius: diameter / 2),
-                    lineWidth: diameter * 0.12)
-            Circle()
-                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1.5)
 
-            // An empty symbol leaves the disc bare (for overlays like the drawn check).
-            Image(systemName: symbol.isEmpty ? "circle" : symbol)
-                .opacity(symbol.isEmpty ? 0 : 1)
-                .font(.system(size: diameter * 0.58, weight: .regular))
-                .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)],
-                                                startPoint: .top, endPoint: .bottom))
-                .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+            if let artwork, let image = BrandAssets.image(artwork) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: diameter * 1.15, height: diameter * 1.15)
+                    .shadow(color: .black.opacity(0.18), radius: 10, y: 6)
+            } else {
+                // An empty symbol leaves the disc bare (for overlays like the drawn check).
+                Image(systemName: symbol.isEmpty ? "circle" : symbol)
+                    .opacity(symbol.isEmpty ? 0 : 1)
+                    .font(.system(size: diameter * 0.58, weight: .regular))
+                    .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)],
+                                                    startPoint: .top, endPoint: .bottom))
+                    .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+            }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityHidden(true)

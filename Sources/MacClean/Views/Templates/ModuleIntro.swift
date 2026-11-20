@@ -17,10 +17,35 @@ struct ModuleIntro {
     let bullets: [Bullet]
     /// Primary button label on the intro.
     var action: String = L10n.tr("扫描", "Scan", "Сканировать")
+    /// Brand kit illustration for the hero disc (BrandAssets/Art_*.png).
+    var artwork: String?
 }
 
 extension SidebarItem {
+    /// Brand kit module illustration for this module's group.
+    var artworkName: String? {
+        switch self {
+        case .smartScan: "Art_Checkup"
+        case .systemJunk, .aiClutter, .mailAttachments, .trashBins, .projectJunk, .diskHogs, .cleanHistory: "Art_Cleanup"
+        case .malwareRemoval, .privacy, .appPermissions, .wifiNetworks, .browserExtensions: "Art_Protection"
+        case .optimization: "Art_Speed_Optimisation"
+        case .maintenance: "Art_Maintenance"
+        case .uninstaller, .unusedApps, .extensions: "Art_Applications"
+        case .updater: "Art_Updater"
+        case .spaceLens, .duplicates: "Art_Space_Map"
+        case .largeOldFiles, .downloadsCleanup: "Art_Large_And_Old"
+        case .shredder: "Art_Shredder"
+        case .tools, .settings: nil
+        }
+    }
+
     var intro: ModuleIntro {
+        var intro = baseIntro
+        intro.artwork = artworkName
+        return intro
+    }
+
+    private var baseIntro: ModuleIntro {
         typealias B = ModuleIntro.Bullet
         switch self {
         case .smartScan:

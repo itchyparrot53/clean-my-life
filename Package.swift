@@ -25,12 +25,14 @@ let package = Package(
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/MacClean",
+            resources: [.copy("BrandAssets")],
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .executableTarget(
             name: "MacCleanMenu",
             dependencies: ["MacCleanKit"],
-            path: "Sources/MacCleanMenu"
+            path: "Sources/MacCleanMenu",
+            resources: [.copy("BrandAssets")]
         ),
         .target(
             name: "MacCleanKit",

@@ -120,6 +120,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Brand kit: the approved Soft Eraser icon in the Dock (debug builds
+        // have no bundle icon; the packaged app also carries AppIcon.icns).
+        if let icon = BrandAssets.image("AppIcon") { NSApp.applicationIconImage = icon }
         AppearanceManager.applyStored()
         SelfUpdateController.shared.start()
         MenuBarLauncher.shared.startWatchingHelperTermination()

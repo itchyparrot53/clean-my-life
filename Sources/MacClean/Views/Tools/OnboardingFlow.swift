@@ -70,7 +70,17 @@ struct OnboardingFlow: View {
                 MenuBarPreview(width: size * 0.78, on: showMenuBar)
             }
         default:
-            TemplateHero(palette: .checkup, symbol: "sparkles", motion: .floating, diameter: size)
+            // Brand kit: the approved app icon, never a sparkle stand-in.
+            if let icon = BrandAssets.image("AppIcon") {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: size * 0.95, height: size * 0.95)
+                    .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+                    .accessibilityLabel(MCConstants.appName)
+            } else {
+                TemplateHero(palette: .checkup, symbol: "sparkles", motion: .floating, diameter: size)
+            }
         }
     }
 

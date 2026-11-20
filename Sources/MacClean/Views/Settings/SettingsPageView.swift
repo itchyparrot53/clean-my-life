@@ -70,6 +70,15 @@ struct SettingsPageView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if tab == .about, let wordmark = BrandAssets.image("Wordmark_White") {
+                Image(nsImage: wordmark)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 44)
+                    .padding(.vertical, 6)
+                    .accessibilityLabel(MCConstants.appName)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(Tab.allCases) { item in

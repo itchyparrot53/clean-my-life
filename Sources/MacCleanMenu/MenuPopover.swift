@@ -356,8 +356,9 @@ struct MenuPopover: View {
         HStack(spacing: 8) {
             Button { TipAction.open() } label: {
                 HStack(spacing: 6) {
-                    Image(nsImage: StatusGlyph.image(working: false, alert: false, size: 14))
-                        .renderingMode(.template)
+                    Image(nsImage: BrandAssets.image("Symbol") ?? StatusGlyph.image(working: false, alert: false, size: 14))
+                        .resizable()
+                        .frame(width: 16, height: 16)
                     Text("Open \(MCConstants.appName)").font(.system(size: 12, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity).frame(height: 30)
@@ -427,32 +428,22 @@ struct Sparkline: View {
     }
 }
 
-/// The status item glyph: a pebble with a sparkle, a ring while the main
-/// app is working, and an amber dot when something needs attention.
-/// Placeholder until the real icon is drawn.
+/// The status item glyph (brand kit: 18 pt eraser template), plus a ring
+/// while the main app is working and a dot when something needs attention.
 enum StatusGlyph {
     static func image(working: Bool, alert: Bool, size: CGFloat = 18) -> NSImage {
+        let template = BrandAssets.image("MenuBar_36") ?? BrandAssets.image("MenuBar_18")
         let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
-            let inset = rect.insetBy(dx: size * 0.12, dy: size * 0.2)
-            let pebble = NSBezierPath(ovalIn: inset.offsetBy(dx: 0, dy: -size * 0.04))
-            pebble.lineWidth = size * 0.09
-            NSColor.black.setStroke()
-            pebble.stroke()
-            // Sparkle on top.
-            let c = NSPoint(x: rect.midX + size * 0.12, y: rect.midY + size * 0.04)
-            let r = size * 0.16
-            let star = NSBezierPath()
-            star.move(to: NSPoint(x: c.x, y: c.y + r))
-            star.curve(to: NSPoint(x: c.x + r, y: c.y), controlPoint1: NSPoint(x: c.x + r * 0.15, y: c.y + r * 0.15), controlPoint2: NSPoint(x: c.x + r * 0.15, y: c.y + r * 0.15))
-            star.curve(to: NSPoint(x: c.x, y: c.y - r), controlPoint1: NSPoint(x: c.x + r * 0.15, y: c.y - r * 0.15), controlPoint2: NSPoint(x: c.x + r * 0.15, y: c.y - r * 0.15))
-            star.curve(to: NSPoint(x: c.x - r, y: c.y), controlPoint1: NSPoint(x: c.x - r * 0.15, y: c.y - r * 0.15), controlPoint2: NSPoint(x: c.x - r * 0.15, y: c.y - r * 0.15))
-            star.curve(to: NSPoint(x: c.x, y: c.y + r), controlPoint1: NSPoint(x: c.x - r * 0.15, y: c.y + r * 0.15), controlPoint2: NSPoint(x: c.x - r * 0.15, y: c.y + r * 0.15))
-            NSColor.black.setFill()
-            star.fill()
+            if let template {
+                template.draw(in: rect.insetBy(dx: size * 0.04, dy: size * 0.04))
+            } else {
+                NSBezierPath(roundedRect: rect.insetBy(dx: size * 0.2, dy: size * 0.3), xRadius: size * 0.15, yRadius: size * 0.15).fill()
+            }
+            NSColor.black.set()
             if working {
                 let ring = NSBezierPath()
-                ring.appendArc(withCenter: NSPoint(x: rect.maxX - size * 0.18, y: rect.minY + size * 0.18),
-                               radius: size * 0.14, startAngle: 90, endAngle: 360)
+                ring.appendArc(withCenter: NSPoint(x: rect.maxX - size * 0.17, y: rect.minY + size * 0.17),
+                               radius: size * 0.13, startAngle: 90, endAngle: 360)
                 ring.lineWidth = size * 0.07
                 ring.stroke()
             }
@@ -462,8 +453,8 @@ enum StatusGlyph {
             }
             return true
         }
-        // Template so the menu bar tints it; the alert dot shows as a
-        // filled dot (macOS doesn't allow colour in template glyphs).
+        // Template so macOS tints it for light and dark menu bars (brand rule:
+        // no colour, glow or app icon in the menu bar).
         image.isTemplate = true
         image.accessibilityDescription = MCConstants.appName
         return image
