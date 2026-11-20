@@ -174,7 +174,13 @@ enum CleanConfirmation {
             let urls = AppCacheOwnership.runningOwnedURLs(in: selected, runningBundleIDs: ids)
             return Set(urls.compactMap(AppCacheOwnership.owningBundleID(for:)))
         }.value
-        return running.filter { $0.bundleIdentifier.map(owners.contains) ?? false }
+        // Only apps with windows you'd recognise; background helpers and
+        // agents (and Clean1 itself) aren't worth quitting for a clean.
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        return running.filter {
+            $0.activationPolicy == .regular && $0.processIdentifier != ownPID
+                && ($0.bundleIdentifier.map(owners.contains) ?? false)
+        }
     }
 }
 
@@ -183,6 +189,8 @@ struct ConfirmCleanDialog: View {
     let results: [ScanResult]
     let selection: Set<URL>
     let runningApps: [NSRunningApplication]
+    /// The total the screen behind already shows, so the two always agree.
+    var total: UInt64?
     let onCancel: () -> Void
     let onConfirm: () -> Void
     @AppStorage(CleanConfirmation.skipSafeKey) private var skipSafe = false
@@ -220,7 +228,8 @@ struct ConfirmCleanDialog: View {
                 HStack {
                     Text(L10n.tr("合计", "Total", "Итого")).font(.system(size: 12, weight: .semibold))
                     Spacer()
-                    Text(FileSizeFormatter.format(rows.reduce(0) { $0 + $1.2 }))
+                    // A file can sit in two categories; it's only removed once.
+                    Text(FileSizeFormatter.format(total ?? results.selectedSize(selection)))
                         .font(.system(size: 13, weight: .semibold).monospacedDigit())
                 }
             }
@@ -230,13 +239,17 @@ struct ConfirmCleanDialog: View {
                     Label("These apps are open and may rewrite their files:", systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Color(hex: 0xF8C04E))
-                    ForEach(runningApps, id: \.processIdentifier) { app in
+                    ForEach(runningApps.prefix(6), id: \.processIdentifier) { app in
                         HStack(spacing: 8) {
                             if let icon = app.icon { Image(nsImage: icon).resizable().frame(width: 16, height: 16) }
                             Text(app.localizedName ?? "").font(.system(size: 12))
                             Spacer()
                             Button(L10n.tr("退出", "Quit", "Завершить")) { app.terminate() }.buttonStyle(.ghostPill)
                         }
+                    }
+                    if runningApps.count > 6 {
+                        Text("and \(runningApps.count - 6) more")
+                            .font(.system(size: 11)).foregroundStyle(TypeScale.tertiaryText)
                     }
                 }
             }

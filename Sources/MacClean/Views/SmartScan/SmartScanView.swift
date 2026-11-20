@@ -112,6 +112,7 @@ struct SmartScanView: View {
         .environment(\.templateNamespace, morph)
         .cardDialog(isPresented: $showCleanConfirm) {
             ConfirmCleanDialog(results: cleanResults, selection: selectedItems, runningApps: runningApps,
+                               total: selectedCleanSize,
                                onCancel: { showCleanConfirm = false },
                                onConfirm: { showCleanConfirm = false; runCleanup() })
         }

@@ -67,6 +67,7 @@ struct SystemJunkView: View {
         .onChange(of: viewModel.state.isResults) { _, isResults in if !isResults { showReview = false } }
         .cardDialog(isPresented: $showLargeSelectionConfirm) {
             ConfirmCleanDialog(results: viewModel.results, selection: viewModel.selectedItems, runningApps: runningApps,
+                               total: viewModel.totalSelectedSize,
                                onCancel: { showLargeSelectionConfirm = false },
                                onConfirm: {
                                    showLargeSelectionConfirm = false
