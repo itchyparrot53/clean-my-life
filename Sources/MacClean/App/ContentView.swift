@@ -37,7 +37,8 @@ struct ContentView: View {
         } detail: {
             ZStack {
                 if let item = appState.selectedSidebarItem {
-                    GradientBackgroundView(theme: item.theme)
+                    // Clean1: per-module gradient with crossfade (UI_SPEC §2.1, A1).
+                    ModuleBackdrop(item: item)
                         .ignoresSafeArea()
                 }
 
@@ -81,6 +82,8 @@ struct ContentView: View {
             .toolbarBackground(.hidden, for: .windowToolbar)
             .environment(\.layoutDirection, contentDirection)
         }
+        // Clean1: the app is always "on colour" with white text (UI_SPEC §2.1).
+        .preferredColorScheme(.dark)
         .disabled(selfUpdater.isPreparingInstallation)
         .overlay {
             if selfUpdater.isPreparingInstallation {

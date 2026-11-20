@@ -25,52 +25,104 @@ public struct ScanButton: View {
         self.action = action
     }
 
+    // Clean1 primary button (UI_SPEC §2.6): a 72 pt glass circle with a glowing
+    // ring. While scanning, the ring becomes the progress indicator (A8). The
+    // optional subtitle is shown as meta text to the right of the circle, laid
+    // out as an overlay so the circle itself stays centred.
     public var body: some View {
-        if isScanning {
-            scanningContent
-        } else {
-            Button(action: action) {
-                idleContent
+        Group {
+            if isScanning {
+                PrimaryCircle(label: "\(Int(progress * 100))%", progress: progress, isEnabled: false)
+            } else {
+                Button(action: action) {
+                    PrimaryCircle(label: title, progress: nil, isEnabled: true)
+                }
+                .buttonStyle(PrimaryCircleButtonStyle())
             }
-            .buttonStyle(SuperEllipseButtonStyle(
-                gradient: theme.buttonGradient,
-                size: CGSize(width: 160, height: 160)
-            ))
         }
-    }
-
-    private var idleContent: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 32, weight: .light))
-            Text(title)
-                .font(.system(size: 18, weight: .semibold))
-            if let subtitle {
+        .overlay(alignment: .leading) {
+            if let subtitle, !isScanning {
                 Text(subtitle)
-                    .font(.system(size: 11))
-                    .opacity(0.7)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .fixedSize()
+                    .offset(x: PrimaryCircle.diameter + 14)
+                    .allowsHitTesting(false)
             }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(isScanning ? "\(title), \(Int(progress * 100)) percent" : title)
+    }
+}
+
+/// The circle itself, shared by the idle and working states.
+struct PrimaryCircle: View {
+    static let diameter: CGFloat = 72
+    static let ringColor = Color(hex: 0xA8E6FF)
+
+    let label: String
+    /// nil = idle (full ring with breathing glow); a value = progress ring.
+    let progress: Double?
+    let isEnabled: Bool
+
+    @State private var glowUp = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            // Glass body.
+            Circle()
+                .fill(.ultraThinMaterial)
+            Circle()
+                .fill(RadialGradient(
+                    colors: [.white.opacity(0.30), .white.opacity(0.12)],
+                    center: .center, startRadius: 0, endRadius: Self.diameter / 2))
+
+            if let progress {
+                // Track + progress ring with a bright head (A8).
+                Circle()
+                    .stroke(.white.opacity(0.18), lineWidth: 3)
+                Circle()
+                    .trim(from: 0, to: max(0.001, progress))
+                    .stroke(Self.ringColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .shadow(color: Self.ringColor.opacity(0.7), radius: 6)
+                    .animation(Motion.progress, value: progress)
+            } else {
+                // Idle ring with breathing glow (A6).
+                Circle()
+                    .stroke(Self.ringColor.opacity(0.9), lineWidth: 3)
+                    .shadow(color: Self.ringColor.opacity(glowUp ? 0.6 : 0.35), radius: glowUp ? 16 : 12)
+            }
+
+            Text(label)
+                .font(.system(size: progress == nil ? 14 : 15, weight: .semibold, design: progress == nil ? .default : .rounded))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 8)
+                .contentTransition(.numericText())
+        }
+        .frame(width: Self.diameter, height: Self.diameter)
+        .opacity(isEnabled || progress != nil ? 1 : 0.45)
+        .onAppear {
+            guard progress == nil, !reduceMotion else { return }
+            withAnimation(Motion.breathing) { glowUp = true }
         }
     }
+}
 
-    private var scanningContent: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Circle()
-                    .stroke(.primary.opacity(0.15), lineWidth: 6)
+/// Hover 1.04, press 0.95 (A5).
+struct PrimaryCircleButtonStyle: ButtonStyle {
+    @State private var isHovering = false
 
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.3), value: progress)
-
-                Text("\(Int(progress * 100))%")
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.primary)
-            }
-            .frame(width: 100, height: 100)
-        }
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : (isHovering ? 1.04 : 1))
+            .animation(Motion.buttonPress, value: configuration.isPressed)
+            .animation(Motion.buttonPress, value: isHovering)
+            .onHover { isHovering = $0 }
+            .contentShape(Circle())
     }
 }
 
