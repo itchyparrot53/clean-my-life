@@ -275,6 +275,26 @@ extension SidebarItem {
                     B(symbol: "doc.on.doc", title: "Downloaded twice",
                       body: "\"file (1)\" copies that match the original exactly."),
                 ])
+        case .similarPhotos:
+            return ModuleIntro(
+                heroSymbol: "photo.stack",
+                subtitle: "Bursts, retakes and near-identical shots, with the best one picked out.",
+                bullets: [
+                    B(symbol: "star", title: "Best one kept",
+                      body: "Each group keeps its sharpest, best-composed photo. You can pick another."),
+                    B(symbol: "photo.on.rectangle", title: "Photos library stays safe",
+                      body: "Shots from Photos go to an album for you to review there, never straight to the Trash."),
+                ])
+        case .screenshots:
+            return ModuleIntro(
+                heroSymbol: "camera.viewfinder",
+                subtitle: "Every screenshot and screen recording, sorted by age.",
+                bullets: [
+                    B(symbol: "clock", title: "Old ones first",
+                      body: "Most screenshots are needed once. Clear out the ones you've moved on from."),
+                    B(symbol: "folder", title: "Or file them away",
+                      body: "Move the ones you want to keep into Pictures, one folder per month."),
+                ])
         case .tools:
             return ModuleIntro(heroSymbol: "square.grid.2x2", subtitle: "Smaller tools, one click away.", bullets: [], action: "Open")
         }
@@ -315,6 +335,8 @@ extension ScanCategory {
         case .projectJunk: "hammer"
         case .localAIModels: "brain"
         case .downloads: "arrow.down.circle"
+        case .similarPhotos: "photo.stack"
+        case .screenshots: "camera.viewfinder"
         }
     }
 

@@ -47,6 +47,8 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
     // Clean1 / Clean My Life additions (UI_SPEC §5.3, §5.18)
     case localAIModels = "local_ai_models"
     case downloads = "downloads"
+    case similarPhotos = "similar_photos"
+    case screenshots = "screenshots"
 
     public var id: String { rawValue }
 
@@ -74,6 +76,8 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .aiToolCaches: L10n.tr("AI 工具缓存", "AI Tool Caches", "Кэш AI-инструментов")
         case .localAIModels: L10n.tr("本地 AI 模型", "Local AI Models", "Локальные AI-модели")
         case .downloads: L10n.tr("下载", "Downloads", "Загрузки")
+        case .similarPhotos: L10n.tr("相似照片", "Similar Photos", "Похожие фото")
+        case .screenshots: L10n.tr("截屏", "Screenshots", "Снимки экрана")
         case .clipboardArchives: L10n.tr("通用剪贴板归档", "Universal Clipboard Archives", "Архивы универсального буфера обмена")
         case .mailAttachments: L10n.tr("邮件附件", "Mail Attachments", "Почтовые вложения")
         case .trashBins: L10n.tr("废纸篓", "Trash Bins", "Корзины")
@@ -113,6 +117,8 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .aiToolCaches: L10n.tr("AI 编码工具的缓存（Claude、Codex）；不含历史与会话。", "Caches from AI coding tools (Claude, Codex). History and sessions excluded.", "Кэши AI-инструментов для программирования (Claude, Codex). История и сеансы не затрагиваются.")
         case .localAIModels: L10n.tr("Ollama、LM Studio 和 Hugging Face 下载的模型。", "Models downloaded by Ollama, LM Studio and Hugging Face.", "Модели, загруженные Ollama, LM Studio и Hugging Face.")
         case .downloads: L10n.tr("下载文件夹中的文件。", "Files in your Downloads folder.", "Файлы в папке «Загрузки».")
+        case .similarPhotos: L10n.tr("几乎相同的照片组。", "Groups of near-identical photos.", "Группы почти одинаковых фото.")
+        case .screenshots: L10n.tr("你拍过的截屏和屏幕录制。", "Screenshots and screen recordings you've taken.", "Ваши снимки и записи экрана.")
         case .clipboardArchives: L10n.tr("用于设备间复制粘贴的临时文件副本；清理前请检查。", "Temporary file copies for pasting between devices. Review before cleaning.", "Временные копии файлов для вставки между устройствами. Проверьте перед очисткой.")
         case .mailAttachments: L10n.tr("邮件附件的缓存副本。", "Saved copies of Mail attachments.", "Кэшированные копии почтовых вложений.")
         case .trashBins: L10n.tr("当前位于废纸篓中的项目。", "Items currently sitting in the Trash.", "Объекты, находящиеся в Корзине.")
@@ -176,7 +182,7 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .languageFiles, .documentVersions, .iosDeviceBackups, .universalBinaries,
              .xcodeJunk, .deletedUsers, .unusedDiskImages, .mailAttachments, .trashBins,
              .malware, .possibleThreats, .browserPrivacy, .systemPrivacy, .largeFiles, .oldFiles, .duplicates,
-             .projectJunk, .clipboardArchives, .localAIModels, .downloads:
+             .projectJunk, .clipboardArchives, .localAIModels, .downloads, .similarPhotos, .screenshots:
             .reviewFirst
         }
     }
@@ -218,6 +224,8 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .projectJunk: L10n.tr("项目中已安装的依赖和构建产物。运行项目的安装或构建命令即可找回；之后第一次构建会更慢。", "Installed dependencies and build output inside your projects. Running the project's install or build command brings them back; the first build afterwards takes longer.", "Установленные зависимости и результаты сборки внутри ваших проектов. Команда установки или сборки проекта вернёт их; первая сборка после этого займёт больше времени.")
         case .localAIModels: L10n.tr("本地运行 AI 所需的大文件。删除后需要重新下载才能再次使用该模型。", "Large files your local AI apps need to run each model. Using a removed model means downloading it again.", "Большие файлы, нужные локальным AI-приложениям. Чтобы снова использовать удалённую модель, её придётся скачать заново.")
         case .downloads: L10n.tr("你下载的东西：安装包、文档、媒体。检查后再移除你不需要的。", "Things you downloaded: installers, documents, media. Look them over and remove what you don't need.", "То, что вы скачали: установщики, документы, медиа. Просмотрите и удалите ненужное.")
+        case .similarPhotos: L10n.tr("连拍和相似镜头。每组至少保留一张；照片图库中的项目只会放进相簿，不会删除。", "Bursts and near-identical shots. At least one photo in each group is kept; items in your Photos library are only added to an album, never deleted.", "Серии и почти одинаковые снимки. В каждой группе остаётся хотя бы одно фото; объекты из медиатеки Фото только добавляются в альбом и не удаляются.")
+        case .screenshots: L10n.tr("截屏通常只用一次。检查后再移除旧的。", "Screenshots are usually needed once. Look them over and remove the old ones.", "Снимки экрана обычно нужны один раз. Просмотрите и удалите старые.")
         }
     }
 
@@ -253,6 +261,8 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .projectJunk: "chevron.left.forwardslash.chevron.right"
         case .localAIModels: "brain"
         case .downloads: "arrow.down.circle"
+        case .similarPhotos: "photo.stack"
+        case .screenshots: "camera.viewfinder"
         }
     }
 
@@ -261,7 +271,7 @@ public enum ScanCategory: String, CaseIterable, Identifiable, Sendable {
         case .unusedDiskImages, .largeFiles, .oldFiles, .duplicates, .projectJunk,
              .universalBinaries, .appLeftovers, .deletedUsers,
              .packageManagerCaches, .ideCaches, .aiToolCaches, .clipboardArchives, .possibleThreats,
-             .localAIModels, .downloads:
+             .localAIModels, .downloads, .similarPhotos, .screenshots:
             // possibleThreats: matches that need the user's judgement (a
             // blocklist that also covers once-legitimate software, community
             // reports no vendor confirmed). List them, never pre-check them.

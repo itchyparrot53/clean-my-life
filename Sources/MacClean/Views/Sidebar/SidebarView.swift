@@ -48,6 +48,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     // Clean My Life new modules (UI_SPEC §5.3, §5.18).
     case aiClutter = "AI 杂物"
     case downloadsCleanup = "下载项"
+    case similarPhotos = "相似照片"
+    case screenshots = "截屏"
 
     // Footer (pinned below the list, not rendered in any section)
     case settings = "设置"
@@ -58,6 +60,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .tools: L10n.tr("工具", "Tools", "Инструменты")
         case .aiClutter: L10n.tr("AI 杂物", "AI Clutter", "AI-мусор")
         case .downloadsCleanup: L10n.tr("下载项", "Downloads", "Загрузки")
+        case .similarPhotos: L10n.tr("相似照片", "Similar Photos", "Похожие фото")
+        case .screenshots: L10n.tr("截屏", "Screenshots", "Снимки экрана")
         // Clean1 shows Clean History as Activity (UI_SPEC §5.23).
         case .cleanHistory: L10n.tr("活动", "Activity", "Активность")
         default: L10n.tr(rawValue)
@@ -92,6 +96,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .tools: "tools"
         case .aiClutter: "ai-clutter"
         case .downloadsCleanup: "downloads"
+        case .similarPhotos: "similar-photos"
+        case .screenshots: "screenshots"
         case .settings: "settings"
         }
     }
@@ -130,6 +136,8 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .tools: "square.grid.2x2"
         case .aiClutter: "brain"
         case .downloadsCleanup: "tray.and.arrow.down"
+        case .similarPhotos: "photo.stack"
+        case .screenshots: "camera.viewfinder"
         case .settings: "gearshape"
         }
     }
@@ -141,7 +149,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .malwareRemoval, .privacy, .browserExtensions, .wifiNetworks, .appPermissions: .protection
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
-        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup: .files
+        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup, .similarPhotos, .screenshots: .files
         case .settings, .tools: .settings
         }
     }
@@ -153,7 +161,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         case .malwareRemoval, .privacy, .browserExtensions, .wifiNetworks, .appPermissions: .protection
         case .optimization, .maintenance: .performance
         case .uninstaller, .unusedApps, .extensions, .updater: .applications
-        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup: .files
+        case .spaceLens, .largeOldFiles, .duplicates, .shredder, .downloadsCleanup, .similarPhotos, .screenshots: .files
         case .settings, .tools: .main
         }
     }
@@ -167,7 +175,7 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
     /// Mac Sai modules that aren't in the Clean1 sidebar (UI_SPEC §3.1).
     /// They open from the Tools button in the sidebar footer.
     public static var toolItems: [SidebarItem] { [
-        .diskHogs, .projectJunk, .unusedApps, .browserExtensions, .wifiNetworks,
+        .screenshots, .diskHogs, .projectJunk, .unusedApps, .browserExtensions, .wifiNetworks,
     ] }
 
     /// Footer button that opens Activity (built on Clean History for now).
@@ -210,7 +218,7 @@ public enum SidebarSection: String, CaseIterable, Identifiable {
         case .protection: [.malwareRemoval, .privacy, .appPermissions]
         case .performance: [.optimization, .maintenance]
         case .applications: [.uninstaller, .updater, .extensions]
-        case .files: [.spaceLens, .largeOldFiles, .duplicates, .downloadsCleanup, .shredder]
+        case .files: [.spaceLens, .largeOldFiles, .duplicates, .similarPhotos, .downloadsCleanup, .shredder]
         }
     }
 }

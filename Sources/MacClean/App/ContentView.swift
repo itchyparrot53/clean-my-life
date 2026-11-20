@@ -291,6 +291,10 @@ struct ContentView: View {
             AIClutterView()
         case .downloadsCleanup:
             DownloadsView()
+        case .similarPhotos:
+            SimilarPhotosView()
+        case .screenshots:
+            ScreenshotsView()
         case .settings:
             SettingsPageView()
         }

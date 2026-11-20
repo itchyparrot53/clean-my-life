@@ -163,6 +163,8 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
     <string>NSApplication</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Similar Photos looks for near-identical shots in your library and adds the extras to an album for you to review. Nothing is deleted from your library.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSUIElement</key>

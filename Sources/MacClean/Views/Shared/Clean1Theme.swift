@@ -52,7 +52,8 @@ extension SidebarItem {
         case .maintenance: .maintenance
         case .uninstaller, .unusedApps, .extensions: .applications
         case .updater: .updater
-        case .spaceLens, .duplicates: .spaceMap
+        case .spaceLens, .duplicates, .similarPhotos: .spaceMap
+        case .screenshots: .largeOld
         case .largeOldFiles, .downloadsCleanup: .largeOld
         case .shredder: .shredder
         case .settings, .tools: .slate
