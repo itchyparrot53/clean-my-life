@@ -1712,7 +1712,7 @@ public enum L10n {
     /// through model properties. Most UI strings use the three-argument overload
     /// so every supported translation lives beside the original expression.
     private static let englishFallbacks: [String: String] = [
-        "智能扫描": "Smart Scan",
+        "智能扫描": "Checkup",
         "系统垃圾": "System Junk",
         "邮件附件": "Mail Attachments",
         "废纸篓": "Trash Bins",
@@ -1731,7 +1731,7 @@ public enum L10n {
         "未使用的应用": "Unused Apps",
         "扩展": "Extensions",
         "应用更新": "Updater",
-        "空间透视": "Space Lens",
+        "空间透视": "Space Map",
         "大文件与旧文件": "Large & Old Files",
         "重复文件": "Duplicates",
         "文件粉碎": "Shredder",
@@ -4437,7 +4437,7 @@ public enum L10n {
         "移除不再使用的已保存网络，减少被追踪的可能。需要管理员权限。": "Rimuovi le reti salvate non più in uso per ridurre le tracce di localizzazione. Richiede permessi di amministratore.",
         "移除背景颜色": "Rimuovi colori di sfondo",
         "稍后": "Più tardi",
-        "空间透视": "Space Lens",
+        "空间透视": "Space Map",
         "第三方": "Di terze parti",
         "筛选": "Filtra",
         "粉碎": "Distruggi",

@@ -1,7 +1,14 @@
 import Foundation
 
 public enum MCConstants {
-    public static let appName = "Mac Sai"
+    // Clean1 fork: our display name. Bundle IDs stay Mac Sai's for now (they are
+    // wired into packaging scripts and the helper's XPC requirement).
+    public static let appName = "Clean1"
+    /// Credit shown in Settings, as the BSD-3 licence asks.
+    public static let upstreamCredit = "Based on Mac Sai, © 2026 Mac Sai Contributors (BSD-3-Clause)"
+    /// Clean1 fork: never check Mac Sai's release feeds, so our build is not
+    /// offered an "update" that would replace it with the upstream app.
+    public static let upstreamUpdateChecksEnabled = false
     public static let bundleIdentifier = "com.macclean.app"
     public static let helperBundleIdentifier = "com.macclean.helper"
     public static let menuBundleIdentifier = "com.macclean.menu"

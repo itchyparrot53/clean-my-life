@@ -82,30 +82,32 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         self = match
     }
 
+    /// Clean1 icon map (UI_SPEC §2.4). Outline symbols; the selected row shows
+    /// the `.fill` variant where one exists (Phase 2).
     public var icon: String {
         switch self {
         case .smartScan: "sparkle.magnifyingglass"
-        case .systemJunk: "trash.circle"
-        case .mailAttachments: "paperclip.circle"
+        case .systemJunk: "internaldrive"
+        case .mailAttachments: "paperclip"
         case .trashBins: "trash"
-        case .malwareRemoval: "shield.lefthalf.filled"
-        case .privacy: "hand.raised.fill"
+        case .malwareRemoval: "ladybug"
+        case .privacy: "lock"
         case .wifiNetworks: "wifi"
-        case .appPermissions: "lock.shield"
-        case .optimization: "gauge.with.dots.needle.67percent"
-        case .maintenance: "wrench.and.screwdriver"
-        case .uninstaller: "xmark.app"
+        case .appPermissions: "key"
+        case .optimization: "slider.horizontal.3"
+        case .maintenance: "gearshape.2"
+        case .uninstaller: "shippingbox"
         case .extensions: "puzzlepiece.extension"
-        case .updater: "arrow.triangle.2.circlepath"
+        case .updater: "arrow.up.circle"
         case .spaceLens: "chart.pie"
-        case .largeOldFiles: "doc.richtext"
-        case .duplicates: "plus.square.on.square"
+        case .largeOldFiles: "archivebox"
+        case .duplicates: "doc.on.doc"
         case .shredder: "scissors"
-        case .browserExtensions: "puzzlepiece"
+        case .browserExtensions: "globe"
         case .diskHogs: "externaldrive.badge.xmark"
-        case .projectJunk: "shippingbox"
+        case .projectJunk: "hammer"
         case .cleanHistory: "arrow.uturn.backward.circle"
-        case .unusedApps: "app.badge.checkmark"
+        case .unusedApps: "moon.zzz"
         case .settings: "gearshape"
         }
     }

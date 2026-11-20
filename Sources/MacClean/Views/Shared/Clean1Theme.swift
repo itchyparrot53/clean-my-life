@@ -68,8 +68,98 @@ enum Motion {
     static let progress = Animation.linear(duration: 0.15)
 }
 
-/// The card background: module gradient, a soft top-right highlight, and a
-/// crossfade when the module changes (A1).
+/// Translucent surfaces (UI_SPEC §2.2). Fills sit on top of a material.
+enum Surface {
+    static let sidebarFill = Color.white.opacity(0.16)
+    static let sidebarStroke = Color.white.opacity(0.18)
+    static let sidebarSelection = Color.black.opacity(0.16)
+    static let rowSelection = Color.white.opacity(0.12)
+    static let sheetFill = Color.black.opacity(0.22)
+    static let popoverFill = Color.black.opacity(0.78)
+    static let searchFill = Color.white.opacity(0.12)
+    static let ghostPillFill = Color.white.opacity(0.14)
+    static let secondaryPill = Color(hex: 0x5CC8F0)
+    static let hairline = Color.white.opacity(0.15)
+    static let dimmed: Double = 0.35
+
+    static let cardRadius: CGFloat = 12
+    static let sidebarRadius: CGFloat = 12
+    static let selectionRadius: CGFloat = 7
+    static let rowRadius: CGFloat = 8
+    static let popoverRadius: CGFloat = 10
+    static let pillRadius: CGFloat = 6
+}
+
+/// Type scale (UI_SPEC §2.3). White text over the gradients.
+enum TypeScale {
+    static let sidebarItem = Font.system(size: 13)
+    static let sidebarHeader = Font.system(size: 12)
+    static let sidebarBadge = Font.system(size: 11)
+    static let topBarTitle = Font.system(size: 13, weight: .medium)
+    static let topBarBack = Font.system(size: 13)
+    static let introTitle = Font.system(size: 26, weight: .semibold)
+    static let introSubtitle = Font.system(size: 13)
+    static let bulletTitle = Font.system(size: 13, weight: .semibold)
+    static let bulletBody = Font.system(size: 11)
+    static let resultsHeadline = Font.system(size: 22, weight: .semibold)
+    static let bigMetric = Font.system(size: 40, weight: .light).monospacedDigit()
+    static let bigMetricUnit = Font.system(size: 14)
+    static let reviewTitle = Font.system(size: 26, weight: .semibold)
+    static let reviewDescription = Font.system(size: 13)
+    static let row = Font.system(size: 13)
+    static let rowSize = Font.system(size: 13).monospacedDigit()
+    static let primaryButton = Font.system(size: 14, weight: .semibold)
+    static let meta = Font.system(size: 13)
+
+    static let primaryText = Color.white
+    static let secondaryText = Color.white.opacity(0.75)
+    static let tertiaryText = Color.white.opacity(0.55)
+    static let headerText = Color.white.opacity(0.55)
+}
+
+/// Window measurements (UI_SPEC §1.2) as fractions of the card width W /
+/// height H, with the pt values at the default 976 × 640 card.
+enum CardLayout {
+    static let defaultCard = CGSize(width: 976, height: 640)
+    static let minimumCard = CGSize(width: 820, height: 560)
+    static let sidebarWidth: CGFloat = 205          // 0.21 W
+    static let sidebarOverhang: CGFloat = 34        // 0.035 W
+    static let sidebarTopInset: CGFloat = 30
+    static let sidebarBottomInset: CGFloat = 26
+    static let topBarHeight: CGFloat = 44
+    static let primaryButtonDiameter: CGFloat = 72  // 0.072 W
+    static let primaryButtonBottomInset: CGFloat = 36
+    static let heroDiameter: CGFloat = 260          // 0.27 W
+    static let heroCenter = CGPoint(x: 0.76, y: 0.45) // × (W, H)
+    static let introTextLeading: CGFloat = 0.31     // × W
+    static let introTextMaxWidth: CGFloat = 0.30    // × W
+    static let trafficLightInset = CGPoint(x: 18, y: 16)
+}
+
+/// A small tiling grain texture laid over the gradients at low opacity so they
+/// don't band (UI_SPEC §2.1). Generated once, deterministically.
+enum GrainTexture {
+    static let tile: CGImage? = {
+        let size = 128
+        var pixels = [UInt8](repeating: 0, count: size * size)
+        var seed: UInt32 = 0x9E37_79B9
+        for index in pixels.indices {
+            // xorshift32: cheap, deterministic noise.
+            seed ^= seed << 13
+            seed ^= seed >> 17
+            seed ^= seed << 5
+            pixels[index] = UInt8(truncatingIfNeeded: seed)
+        }
+        guard let provider = CGDataProvider(data: Data(pixels) as CFData) else { return nil }
+        return CGImage(
+            width: size, height: size, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: size,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: 0),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+    }()
+}
+
+/// The card background: module gradient, grain, a soft top-right highlight,
+/// and a crossfade when the module changes (A1).
 struct ModuleBackdrop: View {
     let item: SidebarItem
     @AppStorage("removeBackgroundColors") private var removeBackgroundColors = false
@@ -81,6 +171,15 @@ struct ModuleBackdrop: View {
             LinearGradient(colors: [palette.top, palette.bottom], startPoint: .top, endPoint: .bottom)
                 .id(palette.top.description + palette.bottom.description)
                 .transition(.opacity)
+        }
+        .overlay {
+            if let tile = GrainTexture.tile {
+                Image(decorative: tile, scale: 2)
+                    .resizable(resizingMode: .tile)
+                    .blendMode(.overlay)
+                    .opacity(0.06)
+                    .allowsHitTesting(false)
+            }
         }
         .overlay {
             GeometryReader { proxy in

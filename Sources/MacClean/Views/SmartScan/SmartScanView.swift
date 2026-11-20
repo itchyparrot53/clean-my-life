@@ -115,7 +115,7 @@ struct SmartScanView: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text(L10n.tr("智能扫描", "Smart Scan", "Умное сканирование"))
+                Text(L10n.tr("智能扫描", "Checkup", "Умное сканирование"))
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.primary)
                 Text(L10n.tr("扫描 Mac 中的垃圾文件、恶意威胁\n和性能问题", "Scan your Mac for junk files, malware threats,\nand performance issues", "Поиск на Mac мусора, вредоносных программ\nи проблем с производительностью"))

@@ -96,7 +96,7 @@ struct OnboardingView: View {
                 featureCard("trash.circle", L10n.tr("系统垃圾", "System Junk", "Системный мусор"), L10n.tr("清理缓存、日志和临时文件", "Clean caches, logs, and temp files", "Очистка кэшей, журналов и временных файлов"))
                 featureCard("shield.lefthalf.filled", L10n.tr("恶意软件扫描", "Malware Scan", "Проверка на вредоносное ПО"), L10n.tr("检测并移除威胁", "Detect and remove threats", "Поиск и удаление угроз"))
                 featureCard("xmark.app", L10n.tr("卸载器", "Uninstaller", "Удаление приложений"), L10n.tr("彻底移除应用", "Completely remove apps", "Полное удаление приложений"))
-                featureCard("chart.pie", L10n.tr("空间透视", "Space Lens", "Карта диска"), L10n.tr("可视化磁盘使用情况", "Visualize disk usage", "Визуализация использования диска"))
+                featureCard("chart.pie", L10n.tr("空间透视", "Space Map", "Карта диска"), L10n.tr("可视化磁盘使用情况", "Visualize disk usage", "Визуализация использования диска"))
                 featureCard("plus.square.on.square", L10n.tr("重复文件", "Duplicates", "Дубликаты"), L10n.tr("查找重复文件", "Find duplicate files", "Поиск дубликатов"))
                 featureCard("gauge.with.dots.needle.67percent", L10n.tr("性能", "Performance", "Производительность"), L10n.tr("优化你的 Mac", "Optimize your Mac", "Оптимизация Mac"))
             }
@@ -113,7 +113,7 @@ struct OnboardingView: View {
             Text(L10n.tr("一切就绪！", "You're All Set!", "Всё готово!"))
                 .font(.system(size: 28, weight: .bold))
 
-            Text(L10n.tr("点击“智能扫描”即可一键清理 Mac，也可以在侧边栏探索各个模块。", "Click Smart Scan to clean your Mac with one click, or explore individual modules in the sidebar.", "Нажмите «Умное сканирование», чтобы очистить Mac одним действием, или выберите отдельный модуль на боковой панели."))
+            Text(L10n.tr("点击“智能扫描”即可一键清理 Mac，也可以在侧边栏探索各个模块。", "Click Checkup to clean your Mac with one click, or explore individual modules in the sidebar.", "Нажмите «Умное сканирование», чтобы очистить Mac одним действием, или выберите отдельный модуль на боковой панели."))
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

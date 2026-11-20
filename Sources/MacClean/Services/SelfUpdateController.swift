@@ -25,7 +25,8 @@ final class SelfUpdateController: NSObject, SPUUpdaterDelegate {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? MCConstants.appVersion
     }
 
-    var usesInAppUpdates: Bool { isConfigured && !isHomebrew }
+    // Clean1 fork: the in-app updater stays off so Sparkle never installs Mac Sai over our build.
+    var usesInAppUpdates: Bool { MCConstants.upstreamUpdateChecksEnabled && isConfigured && !isHomebrew }
 
     @ObservationIgnored private let configuration: SelfUpdateConfiguration?
     @ObservationIgnored private var updater: SPUUpdater?

@@ -90,6 +90,9 @@ struct SettingsPageView: View {
                     Text(L10n.tr("版本", "Version", "Версия") + " " + selfUpdater.installedVersion)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text(MCConstants.upstreamCredit)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
                 Spacer()
                 updateControl

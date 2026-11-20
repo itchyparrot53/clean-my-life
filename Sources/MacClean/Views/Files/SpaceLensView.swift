@@ -40,7 +40,7 @@ struct SpaceLensView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.tr("空间透视", "Space Lens", "Карта диска"))
+                Text(L10n.tr("空间透视", "Space Map", "Карта диска"))
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.primary)
                 HStack(spacing: 6) {
