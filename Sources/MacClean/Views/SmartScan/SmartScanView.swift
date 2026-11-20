@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MacCleanKit
 
@@ -23,6 +24,23 @@ struct SmartScanView: View {
     @State private var selectedCleanSize: UInt64 = 0
     @State private var cleanSizeIndex: [URL: UInt64] = [:]
     @State private var showReviewSheet = false
+    @State private var runningApps: [NSRunningApplication] = []
+    @Environment(\.toasts) private var toasts
+
+    private var doneFreed: UInt64? {
+        if case .done(let summary, _) = scanState, summary.removedCount > 0, !summary.wasCancelled { return summary.freedBytes }
+        return nil
+    }
+
+    /// §8: always confirm Checkup's run, listing open apps that own files.
+    private func requestRun() {
+        let results = cleanResults, selection = selectedItems
+        runningApps = []
+        showCleanConfirm = true
+        Task { @MainActor in
+            runningApps = await CleanConfirmation.runningOwners(results: results, selection: selection)
+        }
+    }
     @State private var reviewArea: Area?
     @Namespace private var morph
 
@@ -92,12 +110,13 @@ struct SmartScanView: View {
         }
         .animation(TemplateMotion.morph, value: stateKey)
         .environment(\.templateNamespace, morph)
-        .alert(CleanupStrings.confirmationTitle(count: selectedItems.count), isPresented: $showCleanConfirm) {
-            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-            Button(L10n.tr("清理", "Clean", "Очистить"), role: .destructive) { runCleanup() }
-        } message: {
-            Text(cleanupConfirmationMessage(for: CleanupSelectionPolicy.selectedCategories(
-                in: cleanResults, selection: selectedItems)))
+        .cardDialog(isPresented: $showCleanConfirm) {
+            ConfirmCleanDialog(results: cleanResults, selection: selectedItems, runningApps: runningApps,
+                               onCancel: { showCleanConfirm = false },
+                               onConfirm: { showCleanConfirm = false; runCleanup() })
+        }
+        .onChange(of: doneFreed) { _, freed in
+            if let freed, freed > 0 { toasts?.movedToTrash(FileSizeFormatter.format(freed)) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .topBarAccessory(id: "cleanupPermissions") { CleanupPermissionsButton() }
@@ -119,7 +138,7 @@ struct SmartScanView: View {
         }
         .respondsToModuleShortcuts(
             onScan: startScan,
-            onClean: { showCleanConfirm = true },
+            onClean: { requestRun() },
             canScan: {
                 switch scanState {
                 case .idle, .empty, .done, .results: true
@@ -369,7 +388,7 @@ struct SmartScanView: View {
                 PrimarySlot {
                     PrimaryButton(label: L10n.tr("运行", "Run", "Запустить"),
                                   meta: FileSizeFormatter.format(selectedCleanSize),
-                                  isEnabled: !selectedItems.isEmpty && !showReviewSheet) { showCleanConfirm = true }
+                                  isEnabled: !selectedItems.isEmpty && !showReviewSheet) { requestRun() }
                 }
             }
         }

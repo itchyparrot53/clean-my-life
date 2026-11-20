@@ -12,6 +12,11 @@ final class SystemJunkViewModel {
         case done(summary: CleanSummary)
 
         var isResults: Bool { if case .results = self { true } else { false } }
+        /// Bytes freed once a clean finished, for the Undo toast.
+        var doneFreed: UInt64? {
+            if case .done(let summary) = self, summary.removedCount > 0, !summary.wasCancelled { return summary.freedBytes }
+            return nil
+        }
     }
 
     var state: State = .idle

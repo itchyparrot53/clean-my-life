@@ -32,6 +32,7 @@ struct SpaceLensView: View {
     @State private var removing = false
     @State private var removeError: String?
     @StateObject private var scanProgress = SpaceLensScanProgress()
+    @Environment(\.toasts) private var toasts
     @Namespace private var morph
 
     private let scanner = FileTreeScanner()
@@ -377,6 +378,7 @@ struct SpaceLensView: View {
             let result = await CleanActions.executeUserClean(items: items, selectedItems: selection,
                                                              engine: appState.cleaningEngine)
             removing = false
+            if result.removedCount > 0 { toasts?.movedToTrash(FileSizeFormatter.format(result.freedBytes)) }
             if let first = result.errors.first {
                 removeError = "\(result.removedCount) moved to the Trash. \(result.errors.count) couldn't be: \(first.error)"
             }

@@ -128,7 +128,7 @@ enum CardLayout {
     static let minimumCard = CGSize(width: 820, height: 560)
     static let sidebarWidth: CGFloat = 205          // 0.21 W
     static let sidebarOverhang: CGFloat = 34        // 0.035 W
-    static let sidebarTopInset: CGFloat = 30
+    static let sidebarTopInset: CGFloat = 46  // traffic lights centred above the sidebar: 16 pt gap each side
     static let sidebarBottomInset: CGFloat = 26
     static let topBarHeight: CGFloat = 44
     static let primaryButtonDiameter: CGFloat = 72  // 0.072 W

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MacCleanKit
 
@@ -158,6 +159,9 @@ struct ModuleContainerView: View {
     @Environment(\.currentModule) private var module
     @Namespace private var morph
     @State private var showReview = false
+    @State private var showConfirm = false
+    @State private var runningApps: [NSRunningApplication] = []
+    @Environment(\.toasts) private var toasts
 
     private var intro: ModuleIntro { (module ?? .systemJunk).intro }
     private var palette: ModulePalette { module?.palette ?? theme.palette }
@@ -180,20 +184,21 @@ struct ModuleContainerView: View {
         }
         .animation(TemplateMotion.morph, value: stateKey)
         .environment(\.templateNamespace, morph)
+        .cardDialog(isPresented: $showConfirm) {
+            ConfirmCleanDialog(results: results, selection: selectedItems, runningApps: runningApps,
+                               onCancel: { showConfirm = false },
+                               onConfirm: { showConfirm = false; onClean() })
+        }
+        .onChange(of: completion?.freedBytes) { _, freed in
+            // A26: offer Undo after anything went to the Trash (not Empty Trash).
+            guard let completion, completion.removedCount > 0, !confirmEmptyTrash, let freed else { return }
+            toasts?.movedToTrash(FileSizeFormatter.format(freed))
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .moduleStage(moduleStage)
         .sidebarBadge(sidebarBadge)
         .topBarTitle(showReview && !results.isEmpty ? title : nil)
         .onChange(of: results.isEmpty) { _, empty in if empty { showReview = false } }
-        .alert(
-            L10n.tr("清理 \(selectedCount.formatted()) 项？", "Clean \(selectedCount.formatted()) items?", "Очистить \(selectedCount.formatted()) \(L10n.russianPlural(selectedCount, one: "объект", few: "объекта", many: "объектов"))?"),
-            isPresented: $showLargeSelectionConfirm
-        ) {
-            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-            Button(L10n.tr("继续", "Continue", "Продолжить"), role: .destructive) { onClean() }
-        } message: {
-            Text(L10n.tr("约 \(formattedSelectedSize) 数据，可能需要几分钟。清理过程中可以取消。", "That's about \(formattedSelectedSize) of data and may take several minutes. You can cancel mid-cleanup.", "Объём данных — около \(formattedSelectedSize). Операция может занять несколько минут, но её можно отменить."))
-        }
         // Trash Bins empties ~/.Trash permanently — there is no recovery,
         // so this confirmation fires on every Empty regardless of count.
         .alert(
@@ -278,10 +283,19 @@ struct ModuleContainerView: View {
         guard selectedCount > 0 else { return }
         if confirmEmptyTrash {
             showEmptyTrashConfirm = true
-        } else if selectedCount > MCConstants.cleanConfirmationThreshold {
-            showLargeSelectionConfirm = true
-        } else {
-            onClean()
+            return
+        }
+        // §8: totals per category, plus any open apps that own the files.
+        let snapshot = results, selection = selectedItems
+        // Open at once; the open-apps check can take a while on big scans.
+        runningApps = []
+        let ask = CleanConfirmation.isNeeded(results: snapshot, selection: selection)
+        if ask { showConfirm = true }
+        Task { @MainActor in
+            let owners = await CleanConfirmation.runningOwners(results: snapshot, selection: selection)
+            if ask { runningApps = owners }
+            else if owners.isEmpty { onClean() }
+            else { runningApps = owners; showConfirm = true }
         }
     }
 

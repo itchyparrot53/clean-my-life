@@ -24,6 +24,7 @@ struct ContentView: View {
 
     @State private var isFullScreen = false
     @State private var sidebarStatus = SidebarStatusStore()
+    @State private var toasts = ToastCenter()
 
     var body: some View {
         GeometryReader { proxy in
@@ -126,6 +127,7 @@ struct ContentView: View {
             WindowDragArea()
             moduleHost
                 .environment(\.cardGeometry, CardGeometry(card: metrics.card.size, content: metrics.content))
+                .environment(\.toasts, toasts)
                 .frame(width: metrics.content.width, height: metrics.content.height)
                 .offset(x: metrics.content.minX, y: metrics.content.minY)
                 .environment(\.layoutDirection, contentDirection)
@@ -137,6 +139,11 @@ struct ContentView: View {
                 .padding(.trailing, CardLayout.statusButtonInset)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .environment(\.layoutDirection, contentDirection)
+        }
+        .overlay(alignment: .bottom) {
+            // A26: above the primary button, bottom centre of the card.
+            ToastView(center: toasts)
+                .padding(.bottom, CardLayout.primaryButtonBottomInset + CardLayout.primaryButtonDiameter + 14)
         }
         .clipShape(shape)
         .background(

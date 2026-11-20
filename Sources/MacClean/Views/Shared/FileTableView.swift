@@ -471,6 +471,9 @@ private final class ItemCellView: NSTableCellView {
     private let name = NSTextField(labelWithString: "")
     private let path = NSTextField(labelWithString: "")
     private let badge = BadgeView(text: L10n.tr("应用已打开", "App open", "Приложение открыто"))
+    /// Clean1 (UI_SPEC §8): inline "Quit" for the app that owns this item.
+    private let quitButton = NSButton(title: L10n.tr("退出", "Quit", "Завершить"), target: nil, action: nil)
+    private var itemURL: URL?
     private let size = NSTextField(labelWithString: "")
     private let infoButton = NSButton()
     private let revealButton = NSButton()
@@ -509,7 +512,14 @@ private final class ItemCellView: NSTableCellView {
         configureIconButton(infoButton, symbol: "info.circle", tooltip: L10n.tr("复制路径", "Copy path", "Скопировать путь"), action: #selector(infoClicked))
         configureIconButton(revealButton, symbol: "folder", tooltip: L10n.tr("在 Finder 中显示", "Reveal in Finder", "Показать в Finder"), action: #selector(revealClicked))
 
-        for view in [checkbox, icon, name, path, badge, size, infoButton, revealButton] {
+        quitButton.bezelStyle = .push
+        quitButton.controlSize = .mini
+        quitButton.font = .systemFont(ofSize: 10, weight: .medium)
+        quitButton.target = self
+        quitButton.action = #selector(quitClicked)
+        quitButton.toolTip = L10n.tr("退出此应用，以便清理它的文件", "Quit the app so its files can be cleaned", "Завершить приложение, чтобы очистить его файлы")
+
+        for view in [checkbox, icon, name, path, badge, quitButton, size, infoButton, revealButton] {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
@@ -533,7 +543,9 @@ private final class ItemCellView: NSTableCellView {
             size.trailingAnchor.constraint(equalTo: infoButton.leadingAnchor, constant: -10),
             size.centerYAnchor.constraint(equalTo: centerYAnchor),
             size.widthAnchor.constraint(greaterThanOrEqualToConstant: 60),
-            badge.trailingAnchor.constraint(equalTo: size.leadingAnchor, constant: -10),
+            quitButton.trailingAnchor.constraint(equalTo: size.leadingAnchor, constant: -8),
+            quitButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            badge.trailingAnchor.constraint(equalTo: quitButton.leadingAnchor, constant: -6),
             badge.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             name.trailingAnchor.constraint(lessThanOrEqualTo: badge.leadingAnchor, constant: -8),
@@ -575,6 +587,13 @@ private final class ItemCellView: NSTableCellView {
         path.stringValue = item.url.deletingLastPathComponent().path(percentEncoded: false)
         size.stringValue = item.formattedSize
         badge.isHidden = !appRunning
+        quitButton.isHidden = !appRunning
+        itemURL = item.url
+    }
+
+    @objc private func quitClicked() {
+        guard let url = itemURL, let bundleID = AppCacheOwnership.owningBundleID(for: url) else { return }
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).forEach { $0.terminate() }
     }
 
     @objc private func checkboxClicked() { onToggle() }

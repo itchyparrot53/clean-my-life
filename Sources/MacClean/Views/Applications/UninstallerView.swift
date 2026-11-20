@@ -197,6 +197,7 @@ struct UninstallerView: View {
     @State private var batchDone = 0
     @State private var iconFrames: [UUID: CGRect] = [:]
     @State private var flying: [FlyingIcon] = []
+    @Environment(\.toasts) private var toasts
 
     private var batchProgress: Double { Double(batchDone) / Double(max(1, checkedApps.count)) }
 
@@ -390,6 +391,8 @@ struct UninstallerView: View {
                 }
                 batchDone += 1
             }
+            let removed = targets.count - failures.count
+            if removed > 0 { toasts?.movedToTrash("\(removed) app\(removed == 1 ? "" : "s")") }
             if !failures.isEmpty {
                 uninstallError = "Some items couldn't be removed for: " + failures.joined(separator: ", ")
                     + ". Quit them if they're running and try again."

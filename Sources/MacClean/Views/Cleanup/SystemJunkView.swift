@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MacCleanKit
 
@@ -25,6 +26,8 @@ struct SystemJunkView: View {
     }
 
     @State private var showReview = false
+    @State private var runningApps: [NSRunningApplication] = []
+    @Environment(\.toasts) private var toasts
     @Namespace private var morph
 
     private var stateKey: String {
@@ -62,17 +65,16 @@ struct SystemJunkView: View {
         }
         .topBarTitle(showReview && viewModel.state.isResults ? L10n.tr("系统垃圾", "System Junk", "Системный мусор") : nil)
         .onChange(of: viewModel.state.isResults) { _, isResults in if !isResults { showReview = false } }
-        .alert(
-            CleanupStrings.confirmationTitle(count: viewModel.selectedCount),
-            isPresented: $showLargeSelectionConfirm
-        ) {
-            Button(L10n.tr("取消", "Cancel", "Отмена"), role: .cancel) { }
-            Button(L10n.tr("继续", "Continue", "Продолжить"), role: .destructive) {
-                viewModel.startCleaning(engine: appState.cleaningEngine)
-            }
-        } message: {
-            Text(cleanupConfirmationMessage(for: CleanupSelectionPolicy.selectedCategories(
-                in: viewModel.results, selection: viewModel.selectedItems)))
+        .cardDialog(isPresented: $showLargeSelectionConfirm) {
+            ConfirmCleanDialog(results: viewModel.results, selection: viewModel.selectedItems, runningApps: runningApps,
+                               onCancel: { showLargeSelectionConfirm = false },
+                               onConfirm: {
+                                   showLargeSelectionConfirm = false
+                                   viewModel.startCleaning(engine: appState.cleaningEngine)
+                               })
+        }
+        .onChange(of: viewModel.state.doneFreed) { _, freed in
+            if let freed, freed > 0 { toasts?.movedToTrash(FileSizeFormatter.format(freed)) }
         }
         .sheet(isPresented: $showActivityLog) { LogViewerView() }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -150,11 +152,18 @@ struct SystemJunkView: View {
 
     private func requestCleanup() {
         guard viewModel.selectedCount > 0 else { return }
-        if viewModel.selectedCount > MCConstants.cleanConfirmationThreshold
-            || CleanupSelectionPolicy.requiresReview(in: viewModel.results, selection: viewModel.selectedItems) {
-            showLargeSelectionConfirm = true
-        } else {
-            viewModel.startCleaning(engine: appState.cleaningEngine)
+        let results = viewModel.results, selection = viewModel.selectedItems
+        // Mac Sai's review rule still always asks; ours adds the safe-item
+        // opt-out. Open at once; the open-apps check fills in afterwards.
+        runningApps = []
+        let ask = CleanupSelectionPolicy.requiresReview(in: results, selection: selection)
+            || CleanConfirmation.isNeeded(results: results, selection: selection)
+        if ask { showLargeSelectionConfirm = true }
+        Task { @MainActor in
+            let owners = await CleanConfirmation.runningOwners(results: results, selection: selection)
+            if ask { runningApps = owners }
+            else if owners.isEmpty { viewModel.startCleaning(engine: appState.cleaningEngine) }
+            else { runningApps = owners; showLargeSelectionConfirm = true }
         }
     }
 
