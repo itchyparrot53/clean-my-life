@@ -200,18 +200,7 @@ struct SmartScanView: View {
             }
         }
 
-        /// Brand kit illustration for the column.
-        var brandArt: String {
-            switch self {
-            case .cleanup: "Art_Cleanup"
-            case .protection: "Art_Protection"
-            case .speed: "Art_Speed_Optimisation"
-            case .applications: "Art_Applications"
-            case .files: "Art_Large_And_Old"
-            }
-        }
-
-        /// SF Symbol fallback if the brand art is missing.
+        /// Placeholder for our column art (jar, lighthouse, paper plane…).
         var art: String {
             switch self {
             case .cleanup: "takeoutbag.and.cup.and.straw"
@@ -276,7 +265,7 @@ struct SmartScanView: View {
     private var idleView: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", artwork: "Art_Checkup", diameter: 0.35 * space.W)
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", diameter: 0.35 * space.W)
                     .position(x: space.x(0.5), y: space.y(0.38))
                 VStack(spacing: 8) {
                     Text("Ready when you are")
@@ -302,7 +291,7 @@ struct SmartScanView: View {
     private func scanningView(phase: String, progress: Double, filesFound: Int, sizeFound: UInt64) -> some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", artwork: "Art_Checkup", motion: .scanning,
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", motion: .scanning,
                              diameter: 0.25 * space.W)
                     .position(x: space.x(0.5), y: space.y(0.28))
                 VStack(spacing: 6) {
@@ -703,19 +692,11 @@ private struct CheckupColumn: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Group {
-                if let image = BrandAssets.image(area.brandArt) {
-                    HeroDisc(palette: .checkup, symbol: "", artwork: area.brandArt, diameter: 110)
-                        .accessibilityHidden(true)
-                        .id(image.hash)
-                } else {
-                    Image(systemName: area.art)
-                        .font(.system(size: 64, weight: .light))
-                        .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)], startPoint: .top, endPoint: .bottom))
-                        .shadow(color: .black.opacity(0.25), radius: 10, y: 6)
-                }
-            }
-            .frame(height: 120)
+            Image(systemName: area.art)
+                .font(.system(size: 64, weight: .light))
+                .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)], startPoint: .top, endPoint: .bottom))
+                .shadow(color: .black.opacity(0.25), radius: 10, y: 6)
+                .frame(height: 120)
 
             HStack(spacing: 6) {
                 TriStateCheckbox(state: state) { toggle() }

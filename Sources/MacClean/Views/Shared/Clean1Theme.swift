@@ -60,21 +60,6 @@ extension SidebarItem {
     }
 }
 
-/// Clean My Life brand palette (brand kit v1.0, 07_Brand_Colours_And_Design_Tokens).
-enum Brand {
-    static let ink = Color(hex: 0x282448)
-    static let deepNavy = Color(hex: 0x292650)
-    static let lavender = Color(hex: 0xCEC0F7)
-    static let lilac = Color(hex: 0xB89EEF)
-    static let pink = Color(hex: 0xF3A3C7)
-    static let cyanGlow = Color(hex: 0xA8E6FF)
-    static let cyanButton = Color(hex: 0x5CC8F0)
-    static let mint = Color(hex: 0x5EE6C8)
-    static let mintSuccess = Color(hex: 0x5EE6A0)
-    static let amber = Color(hex: 0xF8C04E)
-    static let threat = Color(hex: 0xD9534F)
-}
-
 /// Animation constants named after the A-IDs in UI_SPEC §10.
 enum Motion {
     /// A1: module background crossfade.
@@ -102,7 +87,7 @@ enum Surface {
     static let dimmed: Double = 0.35
 
     static let cardRadius: CGFloat = 12
-    static let sidebarRadius: CGFloat = 20  // brand kit: rounded UI 20–28 pt
+    static let sidebarRadius: CGFloat = 12
     static let selectionRadius: CGFloat = 7
     static let rowRadius: CGFloat = 8
     static let popoverRadius: CGFloat = 10
@@ -161,9 +146,8 @@ enum CardLayout {
     /// sidebar overhang is added on the left on top of this.
     static let windowMargins = NSEdgeInsets(top: 16, left: 18, bottom: 38, right: 26)
 
-    /// Brand kit: rounded UI corners 20–28 pt.
     static var cardRadius: CGFloat {
-        if #available(macOS 26, *) { 26 } else { 24 }
+        if #available(macOS 26, *) { 16 } else { 12 }
     }
 
     /// Window size for a given card size.
