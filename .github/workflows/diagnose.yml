@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   checks: write
 
 jobs:
@@ -44,4 +44,11 @@ jobs:
           except Exception as error:
               print('check-run failed:', error)
           PY
+          cp /tmp/build.log BUILD_LOG.txt
+          git config user.name "clean-my-life ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout -b diagnostics
+          git add BUILD_LOG.txt
+          git commit -m "CI build log" || true
+          git push -f origin HEAD:diagnostics || true
           exit $code
