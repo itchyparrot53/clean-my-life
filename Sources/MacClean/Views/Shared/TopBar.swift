@@ -242,10 +242,10 @@ private struct StatusDot: View {
             .frame(width: 7, height: 7)
             .shadow(color: color.opacity(0.9), radius: 4)
             .scaleEffect(isWorking && pulse && !reduceMotion ? 1.35 : 1)
-            .opacity(isWorking && pulse ? 0.55 : 1)
+            .opacity(isWorking && pulse && !reduceMotion ? 0.55 : 1)
             .onAppear { pulse = isWorking }
             .onChange(of: isWorking) { _, working in pulse = working }
-            .animation(isWorking ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true) : .default,
+            .animation(reduceMotion ? nil : (isWorking ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true) : .default),
                        value: pulse)
     }
 }

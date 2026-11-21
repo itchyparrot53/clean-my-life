@@ -156,6 +156,19 @@ The cask lives in the repo until a tap is published:
 brew install --cask ./Casks/clean-my-life.rb
 ```
 
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `⌘R` | Scan or run the current module |
+| `⌘⌫` | Primary action (Clean or Remove) |
+| `⌘Z` | Undo the last clean |
+| `Space` | Quick Look the focused file |
+| `⌘F` | Search in a review list |
+| `Esc` | Back, or close a sheet |
+| `⌘1` to `⌘9` | Jump to the first nine sidebar items |
+| `⌘,` | Open Settings |
+
 ### Full Disk Access
 
 Mail Attachments, Privacy and parts of the malware scan read protected folders. Grant access in **System Settings → Privacy & Security → Full Disk Access**, add **Clean My Life.app**, then restart the app.

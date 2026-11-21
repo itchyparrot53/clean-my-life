@@ -117,6 +117,7 @@ public struct ScanProgressRing: View {
     let phase: String
     let detail: String?
     let theme: ModuleTheme
+    @State private var announcedStep = 0
 
     public init(progress: Double, phase: String, detail: String? = nil, theme: ModuleTheme = .smartScan) {
         self.progress = progress
@@ -156,6 +157,16 @@ public struct ScanProgressRing: View {
                         .foregroundStyle(.primary.opacity(0.6))
                 }
             }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(L10n.tr("扫描中", "Scanning", "Сканирование"))
+        .accessibilityValue("\(Int(progress * 100))%, \(phase)")
+        .onChange(of: Int(progress * 100)) { _, percent in
+            // Announce at 25 % steps, not on every tick.
+            let step = (percent / 25) * 25
+            guard step > announcedStep, step > 0 else { return }
+            announcedStep = step
+            AccessibilityNotification.Announcement("\(step) percent").post()
         }
     }
 }

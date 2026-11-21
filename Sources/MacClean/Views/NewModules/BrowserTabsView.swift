@@ -84,6 +84,8 @@ struct BrowserTabsView: View {
             }
             .buttonStyle(.secondaryPill)
             .disabled(isScanning)
+            .accessibilityLabel(hasScanned ? "Refresh browser tabs" : "Read browser tabs")
+            .accessibilityHint("macOS asks for Automation permission the first time.")
         }
     }
 
@@ -98,6 +100,7 @@ struct BrowserTabsView: View {
                     )
                     .overlay(Capsule().strokeBorder(Color.white.opacity(filter == option ? 0.28 : 0.10), lineWidth: 1))
                     .buttonStyle(.plain)
+                    .accessibilityAddTraits(filter == option ? .isSelected : [])
             }
             Spacer()
             if !visible.isEmpty {
@@ -168,6 +171,7 @@ struct BrowserTabsView: View {
                 .font(.system(size: 11))
                 .buttonStyle(.plain)
                 .foregroundStyle(Color(hex: 0xF3A3C7))
+                .accessibilityLabel("Close \(tab.title.isEmpty ? tab.domain : tab.title)")
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -176,6 +180,10 @@ struct BrowserTabsView: View {
         .onTapGesture {
             if isSelected { selected.remove(tab.id) } else { selected.insert(tab.id) }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(tab.title.isEmpty ? tab.domain : tab.title), \(tab.domain), \(tab.browser), window \(tab.window)")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityHint("Double-tap to select. Use the Close button to close this tab.")
     }
 
     private var empty: some View {

@@ -699,9 +699,14 @@ private struct FlyingIconView: View {
     let icon: FlyingIcon
     let target: CGPoint
     @State private var began = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation) { context in
+        Group {
+            if reduceMotion {
+                EmptyView()
+            } else {
+                TimelineView(.animation) { context in
             let raw = min(1, max(0, context.date.timeIntervalSince(began) / 0.6))
             let t = CGFloat(raw * raw) // ease in
             let control = CGPoint(x: (icon.start.x + target.x) / 2, y: min(icon.start.y, target.y) - 80)
@@ -713,6 +718,8 @@ private struct FlyingIconView: View {
                 .scaleEffect(1 - 0.8 * t)
                 .opacity(Double(1 - t * 0.9))
                 .position(x: x, y: y)
+                }
+            }
         }
         .onAppear { began = Date() }
     }

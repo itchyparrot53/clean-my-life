@@ -141,9 +141,12 @@ struct TemplateHero: View {
 /// with a few particles drifting up from the rim.
 private struct ScanSweep: View {
     let diameter: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion || activeState != .key)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let sweep = (t.truncatingRemainder(dividingBy: 1.8)) / 1.8
             ZStack {
@@ -175,9 +178,12 @@ private struct ScanSweep: View {
 private struct RadarRings: View {
     let diameter: CGFloat
     let tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.controlActiveState) private var activeState
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion || activeState != .key)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             ZStack {
                 ForEach(0..<3, id: \.self) { index in

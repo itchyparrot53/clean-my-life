@@ -169,6 +169,7 @@ struct OnboardingFlow: View {
 private struct AccessSwitchDrawing: View {
     let width: CGFloat
     @State private var on = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: width * 0.06) {
@@ -185,6 +186,7 @@ private struct AccessSwitchDrawing: View {
         .padding(width * 0.06)
         .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: width * 0.06))
         .onAppear {
+            guard !reduceMotion else { on = true; return }
             withAnimation(.easeInOut(duration: 0.6).delay(0.6).repeatForever(autoreverses: true)) { on = true }
         }
         .accessibilityHidden(true)

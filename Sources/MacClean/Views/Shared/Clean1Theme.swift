@@ -258,6 +258,10 @@ struct ModuleBackdrop: View {
             }
             .allowsHitTesting(false)
         }
+        // Phase 11 contrast: a light scrim keeps white text at 4.5:1 on the
+        // lightest top colours (protection, updater, shredder) without
+        // changing the module identity.
+        .overlay(Color.black.opacity(0.16).allowsHitTesting(false))
         .animation(threat ? .easeInOut(duration: 0.8) : Motion.backdropCrossfade, value: palette)
     }
 }
