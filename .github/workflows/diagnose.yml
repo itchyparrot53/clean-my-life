@@ -1,8 +1,6 @@
 name: Diagnose build
 on:
   push:
-    paths:
-      - '.github/workflows/diagnose.yml'
   workflow_dispatch:
 
 permissions:
