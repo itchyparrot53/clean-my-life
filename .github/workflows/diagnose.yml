@@ -1,0 +1,25 @@
+name: Diagnose build
+on:
+  push:
+    paths:
+      - '.github/workflows/diagnose.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and capture
+        if: always()
+        run: |
+          set +e
+          swift build > /tmp/build.log 2>&1
+          code=$?
+          {
+            echo '### swift build'
+            echo '```'
+            tail -150 /tmp/build.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
