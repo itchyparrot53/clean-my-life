@@ -146,9 +146,10 @@ private struct ScanSweep: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.controlActiveState) private var activeState
 
+    private var paused: Bool { reduceMotion || activeState != .key }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion || activeState != .key)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let sweep = (t.truncatingRemainder(dividingBy: 1.8)) / 1.8
             ZStack {
@@ -183,9 +184,10 @@ private struct RadarRings: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.controlActiveState) private var activeState
 
+    private var paused: Bool { reduceMotion || activeState != .key }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion || activeState != .key)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             ZStack {
                 ForEach(0..<3, id: \.self) { index in

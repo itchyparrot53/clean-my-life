@@ -525,7 +525,7 @@ public struct SidebarView: View {
         .frame(width: 230)
     }
 
-    static func filled(_ symbol: String) -> String {
+    nonisolated static func filled(_ symbol: String) -> String {
         NSImage(systemSymbolName: symbol + ".fill", accessibilityDescription: nil) == nil ? symbol : symbol + ".fill"
     }
 
