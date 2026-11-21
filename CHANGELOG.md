@@ -88,6 +88,14 @@ The first public beta of the Clean My Life fork.
   folder no longer looks frozen.
 - Downloads reports the file it is sizing instead of sitting at 40 % while it
   walks a large folder.
+- Malware results now open a **Scan details** popover with the rule sets,
+  Apple's protection status, signatures and anything that needs review,
+  instead of two lines of grey caption text under the progress ring.
+- **Administrator approval is shared.** Maintenance and Wi-Fi route through one
+  in-process runner, so macOS caches the Touch ID approval for about five
+  minutes instead of prompting for every task. Settings > Helper has
+  "Approve now" and "Ask when the app opens". A signed background helper is the
+  only way to extend this to once per install.
 - Codeless kernel extensions (such as SoftRAID's) are no longer reported as
   unsigned, and signature checks run in parallel.
 - Chrome extensions retired for "minor policy" (Manifest V2) are no longer

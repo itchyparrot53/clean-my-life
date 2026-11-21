@@ -32,6 +32,11 @@ Reports about the following areas get priority:
 - **`Sources/MacClean/Modules/Maintenance/MaintenanceModule.swift`**: anything that turns the administrator-prompt maintenance commands into arbitrary command execution
 - **Updates**: bypasses of Sparkle's pinned HTTPS feed, required feed/archive signatures, or verification before extraction; replacement racing with active file operations; a tampered third-party app feed steering the user to a malicious download
 - **Network exfiltration**: optional outbound traffic consists of Sparkle checking the feed embedded in a configured signed app and downloading its signed release notes/archives, Homebrew checks (`formulae.brew.sh`) or the GitHub releases API fallback, reading third-party apps' update feeds, and the opt-in MalwareBazaar hash download (`mb-api.abuse.ch`, only after you add an abuse.ch Auth-Key and press Update Now; each request sends only your Auth-Key and the query, never file hashes or paths, and redirects are refused so the key can't be forwarded; when a downloaded hash matches a signed file, macOS also asks Apple whether its signing certificate was revoked, the same OCSP check Gatekeeper makes). Update requests reveal normal connection metadata such as IP address and HTTP headers; Sparkle system profiling and release-note JavaScript are disabled, and scan results/file lists are not uploaded. Project/support and browser-settings links are user-initiated. Report any undisclosed network activity you observe
+- **Administrator approval**: Maintenance and Wi-Fi share one in-process
+  `do shell script … with administrator privileges` runner. macOS caches the
+  approval for about five minutes; the app never stores the password or the
+  authorization right, and Settings > Helper can clear the expectation. Report
+  any path that runs root work without the system prompt
 - **TCC / Full Disk Access**: any path to silently gain or abuse FDA
 
 For configured direct installations, automatic update checks are on by default

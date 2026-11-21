@@ -36,6 +36,9 @@ struct SettingsPageView: View {
     @State private var excludedFolders: [String] = FolderExclusionPreferences.paths
     @State private var exclusionError: String?
     @State private var malwareSignatures: MalwareSignatureSummary?
+    @State private var adminApproved = false
+    @State private var adminBusy = false
+    @AppStorage("preauthorizeAdminAtLaunch") private var preauthorizeAdminAtLaunch = false
     @State private var bazaarKeyDraft = ""
     @State private var bazaarHasKey = false
     @State private var bazaarUpdating = false
@@ -108,10 +111,32 @@ struct SettingsPageView: View {
                     alertsSection
                 case .helper:
                     Section(L10n.tr("助手", "Helper", "Помощник")) {
-                        Text("Admin-only maintenance tasks ask for your password when you run them. A background helper that remembers the permission comes with code signing.")
+                        Text("Admin-only tasks ask for your password or Touch ID. macOS caches that approval for about five minutes, so run the tasks together.")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
+                        Toggle("Ask when the app opens", isOn: $preauthorizeAdminAtLaunch)
+                        Text("Warm the approval at launch so Maintenance and Wi-Fi do not ask again for about five minutes. A signed background helper would extend this to once per install.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                        HStack(spacing: 10) {
+                            Button(adminApproved ? "Approved for this session" : "Approve now") {
+                                Task {
+                                    adminBusy = true
+                                    adminApproved = await AdminSession.shared.approve()
+                                    adminBusy = false
+                                }
+                            }
+                            .disabled(adminBusy || adminApproved)
+                            if adminBusy { ProgressView().controlSize(.small) }
+                            Spacer()
+                        }
+                        if adminApproved {
+                            Text("Approved. Maintenance and Wi-Fi tasks can run without asking again for about five minutes.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.green)
+                        }
                     }
+                    .onAppear { adminApproved = AdminSession.shared.isApproved }
                 case .advanced:
                     Section(L10n.tr("高级", "Advanced", "Дополнительно")) {
                         Toggle("Don't ask before cleaning safe items", isOn: $skipSafeConfirm)

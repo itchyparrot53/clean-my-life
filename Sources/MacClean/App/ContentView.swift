@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var sidebarStatus = SidebarStatusStore()
     @State private var toasts = ToastCenter()
     @AppStorage("hasCompletedOnboarding") private var onboarded = false
+    @AppStorage("preauthorizeAdminAtLaunch") private var preauthorizeAdminAtLaunch = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -73,6 +74,11 @@ struct ContentView: View {
         .task {
             try? await Task.sleep(for: .seconds(3))
             if !selfUpdater.usesInAppUpdates { await updateCoordinator.runCheckIfDue() }
+        }
+        .task {
+            guard preauthorizeAdminAtLaunch else { return }
+            try? await Task.sleep(for: .seconds(1))
+            _ = await AdminSession.shared.approve()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {

@@ -13,11 +13,11 @@ struct PreferredWiFiClient: Sendable {
         PreferredWiFiClient(
             run: { command, args in await Self.runProcess(command: command, arguments: args) },
             runAdminShell: { shell in
-                let escaped = shell
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "\"", with: "\\\"")
-                let script = "do shell script \"\(escaped)\" with administrator privileges"
-                return await Self.runProcess(command: "/usr/bin/osascript", arguments: ["-e", script])
+                // Route through the app's shared in-process runner so the
+                // administrator approval is reused with Maintenance instead of
+                // spawning a fresh osascript prompt for every network.
+                let result = await AdminSession.shared.run(shell)
+                return (result.output, result.error ?? "", result.success ? 0 : 1)
             }
         )
     }
