@@ -4,7 +4,7 @@ All notable changes to Clean My Life are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 semantic versioning after 1.0.
 
-Clean My Life is a fork of [Clean My Life](https://github.com/iliyami/CleanMyLife). The
+Clean My Life is a fork of [Mac Sai](https://github.com/iliyami/MacSai). The
 first fork release starts at 0.1.0; upstream's history remains available in
 git.
 
@@ -75,7 +75,11 @@ The first public beta of the Clean My Life fork.
   "Starts with your Mac" and "Browser extension" alongside the older sources.
 - Pattern rules also run on new files in the real-time monitor.
 - The app is now called **Clean My Life** in every visible place, including the
-  DMG, app bundle, cask, installer, README and site. Internal bundle identifiers
+  DMG, app bundle, cask, installer, README and site. Upstream copyright stays
+  in `LICENSE` and `NOTICE` only.
+- Public-launch cleanup: internal planning notes removed from the repo, README
+  slimmed to the essentials, fresh Checkup/Malware/Scan details/Tools
+  screenshots in the README and site, and the build/affiliation note added. Internal bundle identifiers
   and preference keys stay the same so existing data is not orphaned.
 - Upstream update checks are disabled in this fork; the app never offers to
   replace itself with Clean My Life.

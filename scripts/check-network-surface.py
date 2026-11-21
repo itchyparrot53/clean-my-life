@@ -144,7 +144,9 @@ def binaries_for(target):
                     f"Unreviewed shipped Mach-O component: {path}")
             found_app_paths.add(relative)
             binaries.append((path, EXTERNAL_HELPERS.get(relative, "app")))
-        covered_paths = expected_app_paths | set(EXTERNAL_HELPERS)
+        # The YARA-X helper is optional when Homebrew does not have it at build
+        # time, so require the two app executables and allow the helper.
+        covered_paths = expected_app_paths | (set(EXTERNAL_HELPERS) & found_app_paths)
         require(found_app_paths == covered_paths, f"Missing app executables: {sorted(covered_paths - found_app_paths)}")
         return binaries
     require(target.name == "MacClean" and is_macho(target), "Expected MacClean Mach-O executable or .app bundle")

@@ -58,7 +58,7 @@ final class UpdateSchedulerTests: XCTestCase {
     }
 
     func testActionForDMGIsOpenRelease() {
-        let url = URL(string: "https://github.com/iliyami/CleanMyLife/releases/tag/v1.13.0")!
+        let url = URL(string: "https://github.com/itchyparrot53/clean-my-life/releases/tag/v1.13.0")!
         let a = UpdateScheduler.updateAction(
             isHomebrew: false, releaseURL: url, brewCommand: "ignored")
         XCTAssertEqual(a, .openRelease(url))

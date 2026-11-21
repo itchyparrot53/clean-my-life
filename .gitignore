@@ -62,3 +62,7 @@ devid*
 
 # Marketing copy (not part of the public repo)
 marketing/
+
+# Python
+__pycache__/
+*.pyc

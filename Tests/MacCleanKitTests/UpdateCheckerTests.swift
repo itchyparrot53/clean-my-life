@@ -33,11 +33,11 @@ final class UpdateCheckerTests: XCTestCase {
 
     func testParseValidPayload() throws {
         let json = """
-        {"tag_name": "v1.10.0", "html_url": "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0", "name": "1.10.0"}
+        {"tag_name": "v1.10.0", "html_url": "https://github.com/itchyparrot53/clean-my-life/releases/tag/v1.10.0", "name": "1.10.0"}
         """
         let parsed = try XCTUnwrap(UpdateChecker.parseLatestRelease(Data(json.utf8)))
         XCTAssertEqual(parsed.version, "1.10.0")
-        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0")
+        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/itchyparrot53/clean-my-life/releases/tag/v1.10.0")
     }
 
     func testParseRejectsGarbage() {
@@ -62,7 +62,7 @@ final class UpdateCheckerTests: XCTestCase {
     // MARK: - Align the updater with what Homebrew can actually deliver
 
     func testParseCaskVersion() {
-        let json = #"{"token":"clean-my-life","version":"1.16.0","homepage":"https://github.com/iliyami/CleanMyLife"}"#
+        let json = #"{"token":"clean-my-life","version":"1.16.0","homepage":"https://github.com/itchyparrot53/clean-my-life"}"#
         XCTAssertEqual(UpdateChecker.parseCaskVersion(Data(json.utf8)), "1.16.0")
     }
 

@@ -218,6 +218,7 @@
             <button class="gallery-tab" type="button" role="tab" id="tab-malware" aria-controls="panel-malware" aria-selected="false" tabindex="-1">Malware</button>
             <button class="gallery-tab" type="button" role="tab" id="tab-scanning" aria-controls="panel-scanning" aria-selected="false" tabindex="-1">Scanning</button>
             <button class="gallery-tab" type="button" role="tab" id="tab-results" aria-controls="panel-results" aria-selected="false" tabindex="-1">Results</button>
+            <button class="gallery-tab" type="button" role="tab" id="tab-tools" aria-controls="panel-tools" aria-selected="false" tabindex="-1">Tools</button>
             <button class="gallery-tab" type="button" role="tab" id="tab-welcome" aria-controls="panel-welcome" aria-selected="false" tabindex="-1">Welcome</button>
           </div>
           <div class="gallery-panels">
@@ -231,7 +232,10 @@
               <img src="./assets/shots/scanning.webp" width="1400" height="922" alt="Malware scan in progress, 20 percent" loading="lazy" decoding="async">
             </div>
             <div class="gallery-panel" id="panel-results" role="tabpanel" aria-labelledby="tab-results" hidden>
-              <img src="./assets/shots/results.webp" width="1400" height="922" alt="Malware results with the rule and scanner summary" loading="lazy" decoding="async">
+              <img src="./assets/shots/results.webp" width="1400" height="922" alt="Scan details popover with pattern rules, Apple protection and signatures" loading="lazy" decoding="async">
+            </div>
+            <div class="gallery-panel" id="panel-tools" role="tabpanel" aria-labelledby="tab-tools" hidden>
+              <img src="./assets/shots/tools.webp" width="1400" height="922" alt="Tools hub with pinning and drag to reorder" loading="lazy" decoding="async">
             </div>
             <div class="gallery-panel" id="panel-welcome" role="tabpanel" aria-labelledby="tab-welcome" hidden>
               <img src="./assets/shots/welcome.webp" width="1400" height="922" alt="Welcome screen with the Clean My Life eraser icon" loading="lazy" decoding="async">
@@ -375,7 +379,7 @@ bash scripts/build-dmg.sh --app-only</code><button class="copy-btn" type="button
     </div>
     <div class="container footer-base">
       <span>BSD-3-Clause. Built with Swift 6, SwiftUI and YARA-X.</span>
-      <span>Upstream credits in <a href="https://github.com/itchyparrot53/clean-my-life/blob/main/NOTICE">NOTICE</a>.</span>
+      <span>Built with Opus 5.5 and DeepSeek 4.1 Flash 1017. Inspired by CleanMyMac; not affiliated with MacPaw, CleanMyMac or Apple. Upstream credits in <a href="https://github.com/itchyparrot53/clean-my-life/blob/main/NOTICE">NOTICE</a>.</span>
     </div>
   </footer>
 

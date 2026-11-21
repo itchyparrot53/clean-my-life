@@ -14,10 +14,10 @@ SPEC.loader.exec_module(SURFACE)
 
 class NetworkSurfaceTests(unittest.TestCase):
     def testMembershipLinkIsAllowedOnlyAsAnExactAppURL(self):
-        membership = "https://buymeacoffee.com/iliyami/membership"
+        membership = "https://github.com/itchyparrot53/clean-my-life/discussions"
         SURFACE.audit_surface("", membership, "app")
         for url in (membership + "/", membership + "/other", membership + "?tracking=1",
-                    "https://buymeacoffee.com/someone-else/membership"):
+                    "https://github.com/someone-else/clean-my-life/discussions"):
             with self.subTest(url=url), self.assertRaisesRegex(ValueError, "Unlisted static URL"):
                 SURFACE.audit_surface("", url, "app")
         for role in ("Sparkle", "Downloader", "Installer", "Autoupdate", "Updater"):
