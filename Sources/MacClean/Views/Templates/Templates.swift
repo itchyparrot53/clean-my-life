@@ -189,13 +189,16 @@ private struct Particle: View {
     }
 
     private var angle: Double { Double(index) * 1.1 + 0.4 }
+    private var xOffset: CGFloat { cos(angle) * diameter * 0.46 }
+    private var yOffset: CGFloat {
+        sin(angle) * diameter * 0.2 + diameter * 0.28 - life * diameter * 0.5
+    }
 
     var body: some View {
         Circle()
             .fill(.white.opacity(0.7 * (1 - life)))
             .frame(width: 4, height: 4)
-            .offset(x: cos(angle) * diameter * 0.46,
-                    y: sin(angle) * diameter * 0.2 + diameter * 0.28 - life * diameter * 0.5)
+            .offset(x: xOffset, y: yOffset)
     }
 }
 

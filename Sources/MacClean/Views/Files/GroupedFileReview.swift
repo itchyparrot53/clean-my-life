@@ -203,7 +203,7 @@ struct FileThumbnail: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .task(id: url) {
+            .task(id: url) { @MainActor in
                 let request = QLThumbnailGenerator.Request(
                     fileAt: url, size: CGSize(width: size, height: size),
                     scale: NSScreen.main?.backingScaleFactor ?? 2, representationTypes: .thumbnail)
