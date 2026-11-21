@@ -146,30 +146,56 @@ private struct ScanSweep: View {
 
     var body: some View {
         TimelineView(.animation) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let sweep = (t.truncatingRemainder(dividingBy: 1.8)) / 1.8
-            ZStack {
-                LinearGradient(
-                    colors: [.clear, .white.opacity(0.28), .clear],
-                    startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .frame(width: diameter * 0.5, height: diameter * 1.6)
-                    .rotationEffect(.degrees(35))
-                    .offset(x: (sweep * 2 - 1) * diameter)
-                    .blendMode(.plusLighter)
-                    .mask(Circle().frame(width: diameter, height: diameter))
-                ForEach(0..<6, id: \.self) { index in
-                    let life = ((t / 2.4) + Double(index) / 6).truncatingRemainder(dividingBy: 1)
-                    let angle = Double(index) * 1.1 + 0.4
-                    Circle()
-                        .fill(.white.opacity(0.7 * (1 - life)))
-                        .frame(width: 4, height: 4)
-                        .offset(x: cos(angle) * diameter * 0.46,
-                                y: sin(angle) * diameter * 0.2 + diameter * 0.28 - life * diameter * 0.5)
-                }
-            }
-            .frame(width: diameter, height: diameter)
+            SweepContent(diameter: diameter,
+                         t: context.date.timeIntervalSinceReferenceDate)
         }
         .allowsHitTesting(false)
+    }
+}
+
+private struct SweepContent: View {
+    let diameter: CGFloat
+    let t: TimeInterval
+
+    private var sweep: Double {
+        (t.truncatingRemainder(dividingBy: 1.8)) / 1.8
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [.clear, .white.opacity(0.28), .clear],
+                startPoint: .topLeading, endPoint: .bottomTrailing)
+                .frame(width: diameter * 0.5, height: diameter * 1.6)
+                .rotationEffect(.degrees(35))
+                .offset(x: (sweep * 2 - 1) * diameter)
+                .blendMode(.plusLighter)
+                .mask(Circle().frame(width: diameter, height: diameter))
+            ForEach(0..<6, id: \.self) { index in
+                Particle(diameter: diameter, t: t, index: index)
+            }
+        }
+        .frame(width: diameter, height: diameter)
+    }
+}
+
+private struct Particle: View {
+    let diameter: CGFloat
+    let t: TimeInterval
+    let index: Int
+
+    private var life: Double {
+        ((t / 2.4) + Double(index) / 6).truncatingRemainder(dividingBy: 1)
+    }
+
+    private var angle: Double { Double(index) * 1.1 + 0.4 }
+
+    var body: some View {
+        Circle()
+            .fill(.white.opacity(0.7 * (1 - life)))
+            .frame(width: 4, height: 4)
+            .offset(x: cos(angle) * diameter * 0.46,
+                    y: sin(angle) * diameter * 0.2 + diameter * 0.28 - life * diameter * 0.5)
     }
 }
 
@@ -180,22 +206,47 @@ private struct RadarRings: View {
 
     var body: some View {
         TimelineView(.animation) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            ZStack {
-                ForEach(0..<3, id: \.self) { index in
-                    let life = ((t + Double(index) * 0.8) / 2.4).truncatingRemainder(dividingBy: 1)
-                    Circle()
-                        .strokeBorder(Color.white.opacity(0.7), lineWidth: 1.5)
-                        .background(Circle().fill(tint.opacity(0.12)))
-                        .frame(width: diameter, height: diameter)
-                        .scaleEffect(0.7 + life)
-                        .opacity(0.45 * (1 - life))
-                }
-            }
+            RadarContent(diameter: diameter, tint: tint,
+                         t: context.date.timeIntervalSinceReferenceDate)
         }
         .allowsHitTesting(false)
     }
 }
+
+private struct RadarContent: View {
+    let diameter: CGFloat
+    let tint: Color
+    let t: TimeInterval
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                RadarRing(diameter: diameter, tint: tint, t: t, index: index)
+            }
+        }
+    }
+}
+
+private struct RadarRing: View {
+    let diameter: CGFloat
+    let tint: Color
+    let t: TimeInterval
+    let index: Int
+
+    private var life: Double {
+        ((t + Double(index) * 0.8) / 2.4).truncatingRemainder(dividingBy: 1)
+    }
+
+    var body: some View {
+        Circle()
+            .strokeBorder(Color.white.opacity(0.7), lineWidth: 1.5)
+            .background(Circle().fill(tint.opacity(0.12)))
+            .frame(width: diameter, height: diameter)
+            .scaleEffect(0.7 + life)
+            .opacity(0.45 * (1 - life))
+    }
+}
+
 
 // MARK: - Text block pieces
 
