@@ -125,6 +125,9 @@ jobs:
             --keychain "$RUNNER_TEMP/app-signing.keychain-db"
           rm -f "$KEY_PATH"
 
+      - name: Install YARA-X helper
+        run: brew install yara-x
+
       - name: Build DMG
         env:
           APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
@@ -141,6 +144,11 @@ jobs:
       - name: Clean up keychain
         if: always()
         run: security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+
+      - name: Delete existing release (same tag)
+        run: gh release delete "${{ steps.version.outputs.tag }}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
         run: |
