@@ -21,7 +21,7 @@ jobs:
     name: Build & Test
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -74,7 +74,7 @@ jobs:
     name: Landing site checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check links, assets, metadata and copy
         run: python3 site/tools/check.py
 
@@ -85,7 +85,7 @@ jobs:
     name: Security Audit
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check SafetyGuard integrity
         run: |
