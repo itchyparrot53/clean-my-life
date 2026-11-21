@@ -1,8 +1,6 @@
 cask "clean-my-life" do
   version "0.1.0"
-  # The release workflow replaces this with the published DMG's SHA-256.
-  # :no_check lets the in-repo cask be tested before the first release exists.
-  sha256 :no_check
+  sha256 "6c60402fcbc8dac3b502af89609ae3a388c1b04a133c17a451345c713b297def"
 
   url "https://github.com/itchyparrot53/clean-my-life/releases/download/v#{version}/CleanMyLife-#{version}.dmg"
   name "Clean My Life"
