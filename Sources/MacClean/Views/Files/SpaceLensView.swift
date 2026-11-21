@@ -11,7 +11,7 @@ private final class SpaceLensScanProgress: ObservableObject {
 }
 
 /// Clean1 Space Map (UI_SPEC §5.14): intro with the disk picker, then a
-/// folder list beside our sunburst. Sizes come from Mac Sai's flat-memory
+/// folder list beside our sunburst. Sizes come from Clean My Life's flat-memory
 /// top-level scanner; the second ring fills in for the biggest folders.
 struct SpaceLensView: View {
     @Environment(AppState.self) private var appState

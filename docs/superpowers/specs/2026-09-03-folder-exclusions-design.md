@@ -5,7 +5,7 @@ Status: Design (approved for implementation)
 
 ## Problem
 
-Users want specific folders never touched by Mac Sai scans or cleanup
+Users want specific folders never touched by Clean My Life scans or cleanup
 (e.g. an app’s offline cache). Issue #141 asks for a Settings list of
 folder paths to exclude.
 
@@ -56,7 +56,7 @@ MacClean:
 ## Honest product copy
 
 Buttons and caption say excluded folders are skipped by scans and **cannot
-be deleted** by Mac Sai. They do not protect against other apps or Finder.
+be deleted** by Clean My Life. They do not protect against other apps or Finder.
 
 ## Testing
 

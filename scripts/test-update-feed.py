@@ -21,12 +21,12 @@ PREFIX = "https://example.org/releases/v2/"
 class FeedTests(unittest.TestCase):
     def setUp(self):
         self.assertTrue(SIGN.is_file(), "Resolve Sparkle with swift build before running feed fixtures")
-        self.temporary = tempfile.TemporaryDirectory(prefix="macsai-feed-test-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="cleanmylife-feed-test-")
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
         self.archives = self.directory / "archives"
         self.archives.mkdir()
-        self.archive = self.archives / "MacSai-2.dmg"
+        self.archive = self.archives / "CleanMyLife-2.dmg"
         self.archive.write_bytes(b"Disposable archive fixture, not a mountable DMG.\n")
         self.feed = self.directory / "fixture.xml"
         self.environment = dict(os.environ, SPARKLE_PRIVATE_KEY=SEED, SPARKLE_PUBLIC_ED_KEY=PUBLIC,
@@ -46,7 +46,7 @@ class FeedTests(unittest.TestCase):
                                 text=True, capture_output=True, check=True)
         return result.stdout
 
-    def write_feed(self, signature=None, length=None, url=PREFIX + "MacSai-2.dmg", seed=SEED):
+    def write_feed(self, signature=None, length=None, url=PREFIX + "CleanMyLife-2.dmg", seed=SEED):
         if signature is None:
             signature = re.search(r'edSignature="([^"]+)"', self.sign(self.archive, seed)).group(1)
         signature_attribute = "" if signature == "missing" else f' sparkle:edSignature="{signature}"'
@@ -97,8 +97,8 @@ class FeedTests(unittest.TestCase):
                 self.generate(expected_error="Archive length must be positive and match the file exactly")
 
     def test_rejects_non_https_credentials_and_other_download_locations(self):
-        for url in ["http://example.org/MacSai-2.dmg", "https://user:pass@example.org/MacSai-2.dmg",
-                    "https://other.example.org/releases/v2/MacSai-2.dmg"]:
+        for url in ["http://example.org/CleanMyLife-2.dmg", "https://user:pass@example.org/CleanMyLife-2.dmg",
+                    "https://other.example.org/releases/v2/CleanMyLife-2.dmg"]:
             with self.subTest(url=url):
                 self.write_feed(url=url)
                 self.generate(expected_error="Archive URL")

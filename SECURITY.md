@@ -1,14 +1,14 @@
 # Security Policy
 
-Mac Sai deletes files on your Mac (at your user's privilege level) and can run a few maintenance commands via the standard macOS administrator prompt, so security matters more here than for most apps.
+Clean My Life deletes files on your Mac (at your user's privilege level) and can run a few maintenance commands via the standard macOS administrator prompt, so security matters more here than for most apps.
 
 ## Reporting a vulnerability
 
 **Please do not open public GitHub issues for security vulnerabilities.**
 
-Report them privately via [GitHub's Private Vulnerability Reporting](https://github.com/iliyami/MacSai/security/advisories/new):
+Report them privately via [GitHub's Private Vulnerability Reporting](https://github.com/itchyparrot53/clean-my-life/security/advisories/new):
 
-1. Open the [Security tab](https://github.com/iliyami/MacSai/security) on the repository
+1. Open the [Security tab](https://github.com/itchyparrot53/clean-my-life/security) on the repository
 2. Click **Report a vulnerability**
 3. Include: the affected file or feature, reproduction steps, expected vs actual behavior, and a suggested fix if you have one
 
@@ -49,8 +49,8 @@ with names such as Installer or Updater. Copied Sparkle helpers and macOS trust
 services can run elsewhere and are outside that process snapshot.
 
 To check the installed distribution, run
-`bash scripts/check-network-surface.sh "/Applications/Mac Sai.app"` from a
-matching source checkout. This inspects both Mac Sai executables and all five
+`bash scripts/check-network-surface.sh "/Applications/Clean My Life.app"` from a
+matching source checkout. This inspects both Clean My Life executables and all five
 Sparkle binaries, including the Downloader/Installer XPC services and
 Autoupdate/Updater helpers. Missing or unexpected components, unlisted network
 imports/static URLs, and tracker markers fail the check. It also checks the
@@ -62,7 +62,7 @@ Apple certificate-revocation requests are performed by macOS trust services.
 
 ## Out of scope
 
-- General macOS bugs not specific to Mac Sai
+- General macOS bugs not specific to Clean My Life
 - Findings that require an already-root or already-compromised machine
 - Social engineering or physical access to an unlocked Mac
 
@@ -76,35 +76,24 @@ Apple certificate-revocation requests are performed by macOS trust services.
 
 - Credit in the release notes (or stay anonymous if you prefer)
 - Acknowledgment in this file for significant findings
-- Our genuine thanks. Mac Sai is safer because of you
+- Our genuine thanks. Clean My Life is safer because of you
 
-## Verifying a release is genuine
+## Verifying a release
 
-Every release is signed with our Apple **Developer ID** and **notarized by Apple**, so your own Mac can confirm it is genuinely from us and has not been modified. Verify a downloaded DMG without trusting us:
-
-```bash
-# 1. The DMG carries a stapled Apple notarization ticket
-xcrun stapler validate MacSai-1.9.0.dmg
-
-# 2. Signed by our Developer ID, chaining to Apple
-codesign -dvvv "Mac Sai.app"   # Authority: Developer ID Application: Iliya Mirzaei (H3XLS95QV4)
-
-# 3. Gatekeeper's own verdict
-spctl -a -vvv "Mac Sai.app"    # accepted, source=Notarized Developer ID
-```
-
-`source=Notarized Developer ID` is your Mac confirming with Apple that this exact binary was notarized and signed by team `H3XLS95QV4`. No one without our Developer ID certificate can reproduce that result.
-
-Notarization proves who signed a build, not that it matches this repo. To additionally confirm a release was built from the public source, build it yourself:
+The 0.1.0 beta is ad-hoc signed, not notarized. Do not trust a signature claim
+for it. Verify the file you downloaded against the SHA-256 on the release page,
+and build from source if you need a reproducible binary:
 
 ```bash
-git clone https://github.com/iliyami/MacSai.git
-cd MacSai
-git checkout v1.9.0
+shasum -a 256 CleanMyLife-0.1.0.dmg
+git clone https://github.com/itchyparrot53/clean-my-life.git
+cd clean-my-life
+git checkout v0.1.0
 bash scripts/build-dmg.sh
 ```
 
-The DMG is not bit-for-bit reproducible (signatures embed timestamps and nonces), but the source-to-binary build is straightforward and the behavior should match.
+Future stable releases will be signed with a Developer ID and notarized; this
+section will list the team ID and the exact commands when that is true.
 
 ## Past advisories
 

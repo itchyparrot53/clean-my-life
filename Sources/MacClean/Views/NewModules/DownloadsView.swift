@@ -10,6 +10,7 @@ struct DownloadsView: View {
     @State private var selectedItems: Set<URL> = []
     @State private var isScanning = false
     @State private var scanProgress: Double = 0
+    @State private var scanPhase = "Reading your Downloads folder…"
     @State private var scanComplete = false
     @State private var completion: CleanSummary?
     @State private var cleaning: CleaningEngine.Progress?
@@ -25,7 +26,7 @@ struct DownloadsView: View {
             selectedItems: $selectedItems,
             isScanning: isScanning,
             scanProgress: scanProgress,
-            scanPhase: "Reading your Downloads folder…",
+            scanPhase: scanPhase,
             scanComplete: scanComplete,
             completion: completion,
             cleaning: cleaning,
@@ -45,17 +46,26 @@ struct DownloadsView: View {
     private func scan() {
         isScanning = true
         scanComplete = false
-        scanProgress = 0.4
+        scanProgress = 0.02
+        scanPhase = "Reading your Downloads folder…"
         results = []
         selectedItems = []
         Task {
-            let found = await Task.detached { DownloadsScanner().scan() }.value
+            let found = await Task.detached {
+                DownloadsScanner().scan { fraction, phase in
+                    Task { @MainActor in
+                        scanProgress = max(scanProgress, 0.02 + fraction * 0.96)
+                        scanPhase = phase
+                    }
+                }
+            }.value
             groups = found.groups
             results = found.result.map { [$0] }?.filteringUncleanable() ?? []
             // Installers and exact duplicate downloads start ticked; the rest is yours to choose.
             selectedItems = Set(found.groups.filter { $0.id == "installers" || $0.id == "duplicates" }
                 .flatMap { $0.items.map(\.url) })
             scanProgress = 1
+            scanPhase = "Scan complete"
             isScanning = false
             scanComplete = true
         }

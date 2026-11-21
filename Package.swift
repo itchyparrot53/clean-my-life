@@ -25,7 +25,7 @@ let package = Package(
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/MacClean",
-            resources: [.copy("BrandAssets")],
+            resources: [.copy("BrandAssets"), .copy("MalwareRules")],
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .executableTarget(
@@ -53,6 +53,14 @@ let package = Package(
             name: "MacCleanKitTests",
             dependencies: ["MacCleanKit", "MacCleanTestSupport"],
             path: "Tests/MacCleanKitTests"
+        ),
+        // Machine-specific probes that walk the live filesystem. They skip
+        // themselves unless CLEAN1_LIVE_MALWARE is set, so a normal
+        // `swift test` stays fast. See scripts/live-malware-scan.sh.
+        .testTarget(
+            name: "MacCleanLiveTests",
+            dependencies: ["MacClean", "MacCleanKit"],
+            path: "Tests/MacCleanLiveTests"
         ),
     ]
 )

@@ -22,20 +22,30 @@ SPARKLE_COMPONENTS = {
     "Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader": "Downloader",
     "Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer": "Installer",
 }
+# The YARA-X CLI ships as a reviewed external helper. It is checked for
+# network imports and tracker markers, but its documentation URLs are not an
+# outbound surface. Everything else in the bundle is held to the full list.
+EXTERNAL_HELPERS = {"Contents/Helpers/yr": "YARA-X"}
 MACHO_MAGIC = {bytes.fromhex(value) for value in (
     "cffaedfe", "feedfacf", "cefaedfe", "feedface", "cafebabe", "bebafeca", "cafebabf", "bfbafeca")}
 APP_URLS = {
-    "https://api.github.com/repos/iliyami/MacSai/releases/latest",
-    "https://formulae.brew.sh/api/cask/mac-sai.json",
+    "https://api.github.com/repos/itchyparrot53/clean-my-life/releases/latest",
+    "https://formulae.brew.sh/api/cask/clean-my-life.json",
     "https://mb-api.abuse.ch/api/v1/",
-    # These are user-initiated browser links, not background fetches.
-    "https://auth.abuse.ch/", "https://buymeacoffee.com/iliyami",
-    "https://buymeacoffee.com/iliyami/membership",
-    "https://github.com/iliyami/MacSai", "https://github.com/iliyami/MacSai/releases",
-    "https://github.com/iliyami/MacSai/issues/new/choose",
+    # These are user-initiated links, not background fetches.
+    "https://auth.abuse.ch/",
+    "https://github.com/itchyparrot53/clean-my-life",
+    "https://github.com/itchyparrot53/clean-my-life/releases",
+    "https://github.com/itchyparrot53/clean-my-life/issues/new/choose",
+    "https://github.com/itchyparrot53/clean-my-life/discussions",
+    "https://github.com/elastic/protections-artifacts",
     # Local browser/settings routes and the menu helper's own deep link.
     "arc://extensions", "brave://extensions", "edge://extensions",
     "macappstore://showUpdatesPage", "macclean://module/",
+    # Browser-extension permission patterns are compared, never fetched.
+    "<all_urls>", "*://*/*", "http://*/*", "https://*/*", "file:///*",
+    # PhotoKit's local asset identifier, not a network scheme.
+    "photos-library://asset/",
 }
 SPARKLE_URLS = {
     # An XML namespace identifier and diagnostics documentation, not endpoints.
@@ -111,7 +121,7 @@ def binaries_for(target):
         # Packaging supplies an explicit bundle. Never let stale staging in a
         # restored .build cache replace the current SwiftPM audit target.
         candidates = [ROOT / '.build/debug/MacClean', ROOT / '.build/release/MacClean',
-                      Path('/Applications/Mac Sai.app')]
+                      Path('/Applications/Clean My Life.app')]
         target = next((candidate for candidate in candidates if candidate.exists()), None)
     require(target is not None and target.exists(), "No app or SwiftPM executable found; pass an explicit path")
     bundle = target if target.name.endswith(".app") else next(
@@ -130,11 +140,12 @@ def binaries_for(target):
             if path in covered or not is_macho(path):
                 continue
             relative = str(path.relative_to(bundle))
-            require(relative in expected_app_paths,
+            require(relative in expected_app_paths or relative in EXTERNAL_HELPERS,
                     f"Unreviewed shipped Mach-O component: {path}")
             found_app_paths.add(relative)
-            binaries.append((path, "app"))
-        require(found_app_paths == expected_app_paths, f"Missing app executables: {sorted(expected_app_paths - found_app_paths)}")
+            binaries.append((path, EXTERNAL_HELPERS.get(relative, "app")))
+        covered_paths = expected_app_paths | set(EXTERNAL_HELPERS)
+        require(found_app_paths == covered_paths, f"Missing app executables: {sorted(covered_paths - found_app_paths)}")
         return binaries
     require(target.name == "MacClean" and is_macho(target), "Expected MacClean Mach-O executable or .app bundle")
     menu = target.with_name("MacCleanMenu")
@@ -158,6 +169,11 @@ def inspect(path, role):
 
 def audit_surface(symbols, strings, role):
     require(not TRACKERS.search(strings), f"Tracker/analytics marker found in {role}")
+    if role == "YARA-X":
+        network = sorted({line.strip() for line in symbols.splitlines() if NETWORK_SYMBOL.search(line)})
+        require(not network, f"YARA-X helper has network imports: {network}")
+        require("YARA-X" in strings, "The bundled YARA-X helper is not the expected binary")
+        return
     for symbol in {line.strip() for line in symbols.splitlines() if NETWORK_SYMBOL.search(line)}:
         allowed = False
         if role == "app":

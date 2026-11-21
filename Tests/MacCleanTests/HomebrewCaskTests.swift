@@ -2,8 +2,8 @@ import XCTest
 import Foundation
 
 /// Guards issue #147: Homebrew deprecated `url … verified:` (brew#23280).
-/// The release workflow copies this template into `iliyami/homebrew-macsai`,
-/// so a stale `verified:` here resurfaces as a `brew update` warning.
+/// A stale `verified:` here resurfaces as a `brew update` warning when the
+/// cask is published.
 final class HomebrewCaskTests: XCTestCase {
 
     private var caskSource: String {
@@ -12,7 +12,7 @@ final class HomebrewCaskTests: XCTestCase {
                 .deletingLastPathComponent()
                 .deletingLastPathComponent()
                 .deletingLastPathComponent()
-                .appending(path: "Casks/mac-sai.rb")
+                .appending(path: "Casks/clean-my-life.rb")
             return try String(contentsOf: url, encoding: .utf8)
         }
     }
@@ -27,22 +27,22 @@ final class HomebrewCaskTests: XCTestCase {
         )
         XCTAssertNil(
             deprecated,
-            "Casks/mac-sai.rb must not use the deprecated url verified: parameter (issue #147)"
+            "Casks/clean-my-life.rb must not use the deprecated url verified: parameter (issue #147)"
         )
     }
 
     func testCaskUrlPointsAtGitHubReleaseDMG() throws {
         let src = try caskSource
         XCTAssertTrue(
-            src.contains("url \"https://github.com/iliyami/MacSai/releases/download/v#{version}/MacSai-#{version}.dmg\""),
-            "Casks/mac-sai.rb must download the GitHub release DMG"
+            src.contains("url \"https://github.com/itchyparrot53/clean-my-life/releases/download/v#{version}/CleanMyLife-#{version}.dmg\""),
+            "Casks/clean-my-life.rb must download the GitHub release DMG"
         )
     }
 
     func testCaskDeclaresRequiredStanzas() throws {
         let src = try caskSource
-        for needle in ["cask \"mac-sai\"", "version ", "sha256 ", "homepage ", "app \"Mac Sai.app\""] {
-            XCTAssertTrue(src.contains(needle), "Casks/mac-sai.rb missing \(needle)")
+        for needle in ["cask \"clean-my-life\"", "version ", "sha256 ", "homepage ", "app \"Clean My Life.app\""] {
+            XCTAssertTrue(src.contains(needle), "Casks/clean-my-life.rb missing \(needle)")
         }
     }
 }

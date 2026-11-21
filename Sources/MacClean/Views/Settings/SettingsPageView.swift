@@ -47,7 +47,7 @@ struct SettingsPageView: View {
         return selectable.filter { $0.name.localizedCaseInsensitiveContains(languageSearch) }
     }
 
-    /// Clean1 tabs (UI_SPEC §5.23). Mac Sai's sections, grouped.
+    /// Clean1 tabs (UI_SPEC §5.23). Clean My Life's sections, grouped.
     enum Tab: String, CaseIterable, Identifiable {
         case general, scanning, ignore, protection, notifications, helper, advanced, about
         var id: String { rawValue }
@@ -176,7 +176,7 @@ struct SettingsPageView: View {
                     .disabled(!selfUpdater.automaticChecks)
                 Text(L10n.tr("更新会在退出时安装，也可以选择立即重启应用。", "Updates install when you quit, or you can choose to restart the app now.", "Обновления устанавливаются при выходе. Можно также выбрать немедленный перезапуск приложения."))
                     .font(.caption).foregroundStyle(.secondary)
-                if let channel = Bundle.main.object(forInfoDictionaryKey: "MacSaiUpdateChannelName") as? String {
+                if let channel = Bundle.main.object(forInfoDictionaryKey: "CleanMyLifeUpdateChannelName") as? String {
                     Text(L10n.tr("更新频道：", "Update channel: ", "Канал обновлений: ") + channel)
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -273,7 +273,7 @@ struct SettingsPageView: View {
         }
     }
 
-    static let brewUpgradeCommand = "brew upgrade --cask mac-sai"
+    static let brewUpgradeCommand = "brew upgrade --cask clean-my-life"
 
     @MainActor
     private func startUpdateCheck() {
@@ -482,9 +482,9 @@ struct SettingsPageView: View {
     private var languageSection: some View {
         Section(L10n.tr("语言清理", "Language Cleanup", "Очистка языковых файлов")) {
             Text(L10n.tr(
-                "Base 资源、Mac Sai 的界面语言以及你的 Mac 在“语言与地区”中设置的语言会始终保留。已勾选的语言会保留；未勾选的语言文件可由“系统垃圾”移除。",
-                "Base resources, Mac Sai's interface languages, and the languages in your Mac's Language & Region settings are always kept. Checked languages are preserved; unchecked language files can be removed by System Junk.",
-                "Базовые ресурсы, языки интерфейса Mac Sai и языки из настроек «Язык и регион» вашего Mac сохраняются всегда. Отмеченные языки сохраняются; файлы неотмеченных языков можно удалить в разделе «Системный мусор»."
+                "Base 资源、Clean My Life 的界面语言以及你的 Mac 在“语言与地区”中设置的语言会始终保留。已勾选的语言会保留；未勾选的语言文件可由“系统垃圾”移除。",
+                "Base resources, Clean My Life's interface languages, and the languages in your Mac's Language & Region settings are always kept. Checked languages are preserved; unchecked language files can be removed by System Junk.",
+                "Базовые ресурсы, языки интерфейса Clean My Life и языки из настроек «Язык и регион» вашего Mac сохраняются всегда. Отмеченные языки сохраняются; файлы неотмеченных языков можно удалить в разделе «Системный мусор»."
             ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -742,11 +742,15 @@ struct SettingsPageView: View {
                      title: L10n.tr("发行说明", "Release notes", "Примечания к выпуску"), caption: L10n.tr("更新日志和历史版本", "Changelog and previous versions", "История изменений и предыдущие версии"),
                      url: MCConstants.releasesURL)
             aboutRow(icon: "cup.and.saucer.fill", tint: .yellow,
-                     title: L10n.tr("支持 Mac Sai", "Support Mac Sai", "Поддержать Mac Sai"), caption: SupporterStrings.supportCaption,
+                     title: L10n.tr("支持 Clean My Life", "Support Clean My Life", "Поддержать Clean My Life"), caption: SupporterStrings.supportCaption,
                      url: MCConstants.supportURL)
             aboutRow(icon: "heart.fill", tint: .pink,
                      title: SupporterStrings.title, caption: SupporterStrings.caption(for: Supporters.names),
                      url: MCConstants.membershipURL)
+            aboutRow(icon: "shield.lefthalf.filled", tint: .mint,
+                     title: "Malware rules",
+                     caption: "Pattern matching by YARA-X (VirusTotal, BSD-3-Clause). macOS rules from Elastic Security, under the Elastic License 2.0. Apple's XProtect rules are read from macOS.",
+                     url: URL(string: "https://github.com/elastic/protections-artifacts")!)
         }
     }
 

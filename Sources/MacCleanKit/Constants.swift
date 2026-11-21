@@ -1,13 +1,14 @@
 import Foundation
 
 public enum MCConstants {
-    // Clean1 fork: our display name. Bundle IDs stay Mac Sai's for now (they are
-    // wired into packaging scripts and the helper's XPC requirement).
+    // Our display name. Internal bundle IDs are stable so existing data is
+    // not orphaned; they are wired into packaging and the helper's XPC check.
     public static let appName = "Clean My Life"
-    /// Credit shown in Settings, as the BSD-3 licence asks.
-    public static let upstreamCredit = "Based on Mac Sai, © 2026 Mac Sai Contributors (BSD-3-Clause)"
-    /// Clean1 fork: never check Mac Sai's release feeds, so our build is not
-    /// offered an "update" that would replace it with the upstream app.
+    /// Short licence line shown in Settings. The full notices, including the
+    /// upstream copyright, are in LICENSE and NOTICE.
+    public static let upstreamCredit = "BSD-3-Clause open source"
+    /// Never check another project's release feed, so this build is not
+    /// offered an "update" that would replace it with a different app.
     public static let upstreamUpdateChecksEnabled = false
     public static let bundleIdentifier = "com.macclean.app"
     public static let helperBundleIdentifier = "com.macclean.helper"
@@ -229,7 +230,7 @@ public enum MCConstants {
 
     // English, Chinese, Russian, German (in common modern and legacy forms), and Base
     // are never offered for deletion. These include the interface languages
-    // Mac Sai supports plus the base resources many apps require.
+    // App supports plus the base resources many apps require.
     public static let preservedLanguages: Set<String> = [
         "en.lproj", "English.lproj", "Base.lproj", "en_US.lproj", "en_GB.lproj",
         "zh.lproj", "zh-Hans.lproj", "zh-Hant.lproj", "zh_CN.lproj", "zh_TW.lproj",
@@ -257,20 +258,20 @@ public enum MCConstants {
 
     // MARK: - Project links
 
-    public static let repoURL = URL(string: "https://github.com/iliyami/MacSai")!
-    public static let issuesURL = URL(string: "https://github.com/iliyami/MacSai/issues/new/choose")!
-    public static let releasesURL = URL(string: "https://github.com/iliyami/MacSai/releases")!
+    public static let repoURL = URL(string: "https://github.com/itchyparrot53/clean-my-life")!
+    public static let issuesURL = URL(string: "https://github.com/itchyparrot53/clean-my-life/issues/new/choose")!
+    public static let releasesURL = URL(string: "https://github.com/itchyparrot53/clean-my-life/releases")!
     /// Opened in the browser from the post-clean support card and Settings.
     /// Never fetched by the app, so it is not part of the network surface.
-    public static let supportURL = URL(string: "https://buymeacoffee.com/iliyami")!
+    public static let supportURL = URL(string: "https://github.com/itchyparrot53/clean-my-life/discussions")!
     /// Opened from the Supporters row in Settings. Never fetched either.
-    public static let membershipURL = URL(string: "https://buymeacoffee.com/iliyami/membership")!
-    public static let latestReleaseAPI = URL(string: "https://api.github.com/repos/iliyami/MacSai/releases/latest")!
+    public static let membershipURL = URL(string: "https://github.com/itchyparrot53/clean-my-life/discussions")!
+    public static let latestReleaseAPI = URL(string: "https://api.github.com/repos/itchyparrot53/clean-my-life/releases/latest")!
     /// Homebrew's public API for the official cask. Its `version` reflects what
-    /// `brew upgrade --cask mac-sai` can actually install right now (autobump
+    /// `brew upgrade --cask clean-my-life` can actually install right now (autobump
     /// lags GitHub releases by a few days), so Homebrew installs check this
     /// instead of the GitHub release to keep the update prompt in sync.
-    public static let homebrewCaskAPI = URL(string: "https://formulae.brew.sh/api/cask/mac-sai.json")!
+    public static let homebrewCaskAPI = URL(string: "https://formulae.brew.sh/api/cask/clean-my-life.json")!
 
     // MARK: - App version
     //
@@ -280,5 +281,5 @@ public enum MCConstants {
     // plugin was tried (commit history) but doesn't work under multi-arch
     // `swift build --arch arm64 --arch x86_64` because xcbuild doesn't
     // execute plugins.
-    public static let appVersion = "1.32.3"
+    public static let appVersion = "0.1.0"
 }

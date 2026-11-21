@@ -33,11 +33,11 @@ final class UpdateCheckerTests: XCTestCase {
 
     func testParseValidPayload() throws {
         let json = """
-        {"tag_name": "v1.10.0", "html_url": "https://github.com/iliyami/MacSai/releases/tag/v1.10.0", "name": "1.10.0"}
+        {"tag_name": "v1.10.0", "html_url": "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0", "name": "1.10.0"}
         """
         let parsed = try XCTUnwrap(UpdateChecker.parseLatestRelease(Data(json.utf8)))
         XCTAssertEqual(parsed.version, "1.10.0")
-        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/iliyami/MacSai/releases/tag/v1.10.0")
+        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0")
     }
 
     func testParseRejectsGarbage() {
@@ -56,13 +56,13 @@ final class UpdateCheckerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         XCTAssertTrue(UpdateChecker.isHomebrewInstall(caskroomPaths: [tmp.path]))
-        XCTAssertFalse(UpdateChecker.isHomebrewInstall(caskroomPaths: ["/nonexistent/caskroom/mac-sai"]))
+        XCTAssertFalse(UpdateChecker.isHomebrewInstall(caskroomPaths: ["/nonexistent/caskroom/clean-my-life"]))
     }
 
     // MARK: - Align the updater with what Homebrew can actually deliver
 
     func testParseCaskVersion() {
-        let json = #"{"token":"mac-sai","version":"1.16.0","homepage":"https://github.com/iliyami/MacSai"}"#
+        let json = #"{"token":"clean-my-life","version":"1.16.0","homepage":"https://github.com/iliyami/CleanMyLife"}"#
         XCTAssertEqual(UpdateChecker.parseCaskVersion(Data(json.utf8)), "1.16.0")
     }
 

@@ -14,9 +14,9 @@ struct CleanupPermissionsView: View {
                     Text(L10n.tr("完全磁盘访问权限", "Full Disk Access", "Полный доступ к диску"))
                         .font(.headline)
                     Text(L10n.tr(
-                        "允许 Mac Sai 扫描邮件、浏览器数据和其他受保护的文件夹。在系统设置中添加 Mac Sai 并开启权限，然后重新启动应用并重新扫描。",
-                        "Lets Mac Sai scan Mail, browser data and other protected folders. Add Mac Sai and enable it in System Settings, then restart the app and scan again.",
-                        "Позволяет Mac Sai сканировать Почту, данные браузеров и другие защищённые папки. Добавьте Mac Sai и включите доступ в Системных настройках, затем перезапустите приложение и повторите сканирование."))
+                        "允许 Clean My Life 扫描邮件、浏览器数据和其他受保护的文件夹。在系统设置中添加 Clean My Life 并开启权限，然后重新启动应用并重新扫描。",
+                        "Lets Clean My Life scan Mail, browser data and other protected folders. Add Clean My Life and enable it in System Settings, then restart the app and scan again.",
+                        "Позволяет Clean My Life сканировать Почту, данные браузеров и другие защищённые папки. Добавьте Clean My Life и включите доступ в Системных настройках, затем перезапустите приложение и повторите сканирование."))
                     Button(L10n.tr("打开完全磁盘访问设置", "Open Full Disk Access Settings", "Открыть настройки доступа к диску")) {
                         PermissionManager.shared.openFullDiskAccessSettings()
                     }
@@ -27,9 +27,9 @@ struct CleanupPermissionsView: View {
                     Text(L10n.tr("管理员确认", "Administrator approval", "Подтверждение администратора"))
                         .font(.headline)
                     Text(L10n.tr(
-                        "移动受保护的项目时，macOS 可能仍会要求密码或触控 ID。完全磁盘访问权限不能代替管理员确认。Mac Sai 不保存您的密码，也不能提前批准所有操作。",
-                        "macOS may still ask for a password or Touch ID when moving protected items. Full Disk Access does not replace administrator approval. Mac Sai does not save your password and cannot approve every operation in advance.",
-                        "При перемещении защищённых объектов macOS может запросить пароль или Touch ID. Полный доступ к диску не заменяет подтверждение администратора. Mac Sai не хранит пароль и не может заранее разрешить все операции."))
+                        "移动受保护的项目时，macOS 可能仍会要求密码或触控 ID。完全磁盘访问权限不能代替管理员确认。Clean My Life 不保存您的密码，也不能提前批准所有操作。",
+                        "macOS may still ask for a password or Touch ID when moving protected items. Full Disk Access does not replace administrator approval. Clean My Life does not save your password and cannot approve every operation in advance.",
+                        "При перемещении защищённых объектов macOS может запросить пароль или Touch ID. Полный доступ к диску не заменяет подтверждение администратора. Clean My Life не хранит пароль и не может заранее разрешить все операции."))
                 }
 
                 VStack(alignment: .leading, spacing: 8) {

@@ -99,9 +99,9 @@ final class LocalizationTests: AppLanguageTestCase {
         ("正在准备更新…", "Preparing update…", "Подготовка обновления…"),
         ("正在等待当前操作完成。", "Waiting for current operations to finish.", "Ожидание завершения текущих операций."),
         ("更新已准备就绪", "An update is ready to install", "Обновление готово к установке"),
-        ("Mac Sai 仍在完成当前操作。您可以等待操作完成后退出并安装更新，或留在应用中。",
-         "Mac Sai is still finishing an operation. You can wait, then quit and install the update, or stay in the app.",
-         "Mac Sai ещё выполняет операцию. Можно дождаться её завершения, выйти и установить обновление или остаться в приложении."),
+        ("Clean My Life 仍在完成当前操作。您可以等待操作完成后退出并安装更新，或留在应用中。",
+         "Clean My Life is still finishing an operation. You can wait, then quit and install the update, or stay in the app.",
+         "Clean My Life ещё выполняет операцию. Можно дождаться её завершения, выйти и установить обновление или остаться в приложении."),
         ("等待并退出", "Wait and Quit", "Дождаться и выйти"),
         ("留在应用中", "Stay in App", "Остаться в приложении"),
         ("暂时无法退出", "Unable to quit yet", "Пока не удалось выйти"),
@@ -132,7 +132,7 @@ final class LocalizationTests: AppLanguageTestCase {
     func testClipboardArchiveStringsResolveInEverySupportedDictionary() {
         let keys = [
             "扫描未完成：部分文件夹无法读取",
-            "受保护的文件夹（包括剪贴板归档）需要完全磁盘访问权限。请为此 Mac Sai 副本授权，重新启动应用并再次扫描。",
+            "受保护的文件夹（包括剪贴板归档）需要完全磁盘访问权限。请为此 Clean My Life 副本授权，重新启动应用并再次扫描。",
             "通用剪贴板归档",
             "用于设备间复制粘贴的临时文件副本；清理前请检查。",
             "原始文件会保留。年龄不代表未使用：请先完成复制和设备间传输。清理可能中断待执行的粘贴。",
@@ -713,7 +713,7 @@ final class LocalizationTests: AppLanguageTestCase {
             ("支持文件", "Support files"),
             ("Spotlight 没有应用的使用记录", "Spotlight has no usage history for your apps"),
             ("无法判断哪些应用未被使用。请检查 Spotlight 索引是否已开启。",
-             "Mac Sai can't tell which apps are unused. Check that Spotlight indexing is turned on."),
+             "Clean My Life can't tell which apps are unused. Check that Spotlight indexing is turned on."),
         ]
         // Written the same in Simplified and Traditional Chinese.
         let sameInTraditional: Set<String> = ["未知"]

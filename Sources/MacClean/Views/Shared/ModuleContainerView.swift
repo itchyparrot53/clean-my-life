@@ -277,7 +277,7 @@ struct ModuleContainerView: View {
         }
     }
 
-    /// Clean, with Mac Sai's confirmations: Trash Bins always asks (it's
+    /// Clean, with Clean My Life's confirmations: Trash Bins always asks (it's
     /// permanent); big selections ask too.
     private func requestClean() {
         guard selectedCount > 0 else { return }

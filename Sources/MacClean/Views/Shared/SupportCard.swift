@@ -1,7 +1,7 @@
 import SwiftUI
 import MacCleanKit
 
-/// The one place Mac Sai asks for support: an inline, dismissible card on the
+/// The one place Clean My Life asks for support: an inline, dismissible card on the
 /// post-clean screen, right after the app has visibly helped. It is never a
 /// modal and never blocks anything. The parent shows it only when
 /// `SupportAskLedger.shouldAsk(for:)` says so (a big clean, not the first one,
@@ -57,9 +57,9 @@ struct SupportCard: View {
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.primary)
                     Text(L10n.tr(
-                        "没有订阅，没有广告，没有追踪。Mac Sai 是我和几位志愿者在业余时间做的。如果它帮你省下了买清理软件的钱，请我喝杯咖啡，让它对所有人继续免费。",
-                        "No subscription, no ads, no tracking. I build Mac Sai on nights and weekends with a few volunteers. If it saved you from paying for a cleaner, a coffee keeps it free for everyone.",
-                        "Без подписки, рекламы и слежки. Я делаю Mac Sai по вечерам и выходным вместе с несколькими добровольцами. Если он избавил вас от платной программы для очистки, чашка кофе поможет ему оставаться бесплатным для всех."
+                        "没有订阅，没有广告，没有追踪。Clean My Life 是我和几位志愿者在业余时间做的。如果它帮你省下了买清理软件的钱，请我喝杯咖啡，让它对所有人继续免费。",
+                        "No subscription, no ads, no tracking. I build Clean My Life on nights and weekends with a few volunteers. If it saved you from paying for a cleaner, a coffee keeps it free for everyone.",
+                        "Без подписки, рекламы и слежки. Я делаю Clean My Life по вечерам и выходным вместе с несколькими добровольцами. Если он избавил вас от платной программы для очистки, чашка кофе поможет ему оставаться бесплатным для всех."
                     ))
                     .font(.system(size: 12.5))
                     .foregroundStyle(.primary.opacity(0.68))

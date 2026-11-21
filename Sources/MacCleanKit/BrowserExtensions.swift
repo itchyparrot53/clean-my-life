@@ -67,7 +67,7 @@ public enum BrowserKind: String, Equatable, Sendable, CaseIterable, Identifiable
     public static let chromiumFamily: [BrowserKind] = [.chrome, .brave, .edge, .arc]
 }
 
-/// Why an extension can or cannot be moved to the Trash by Mac Sai.
+/// Why an extension can or cannot be moved to the Trash by Clean My Life.
 public enum BrowserExtensionOrigin: String, Equatable, Hashable, Sendable {
     /// Installed by the user; the folder may be trashed while the browser is closed.
     case user

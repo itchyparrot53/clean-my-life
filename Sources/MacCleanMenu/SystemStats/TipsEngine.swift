@@ -103,7 +103,7 @@ public actor TipsEngine {
     }
 }
 
-/// Click-to-act on a tip. `open()` brings the main Mac Sai app to the
+/// Click-to-act on a tip. `open()` brings the main Clean My Life app to the
 /// foreground; `open(moduleID:)` additionally deep-links straight to the
 /// relevant module via the `macclean://module/<id>` URL scheme.
 public enum TipAction {

@@ -1,13 +1,13 @@
 import Foundation
 
-/// Inter-process state shared between the main Mac Sai app and the
+/// Inter-process state shared between the main Clean My Life app and the
 /// menu bar widget. We use a named `UserDefaults` suite — both processes
 /// open the same suite by name, macOS backs it with a single plist at
 /// `~/Library/Preferences/com.macclean.shared.plist`, and writes from
 /// one process show up in the other on the next read.
 ///
 /// App Groups would be the canonical macOS pattern, but a named suite is
-/// simpler and works regardless of signing. We keep it now that Mac Sai
+/// simpler and works regardless of signing. We keep it now that Clean My Life
 /// is Developer ID signed and notarized, since the shared state is small,
 /// JSON-serializable, and not security-sensitive.
 public enum SharedAppState {

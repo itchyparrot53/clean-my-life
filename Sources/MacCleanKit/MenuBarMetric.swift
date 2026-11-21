@@ -1,6 +1,6 @@
 import Foundation
 
-/// The compact value shown next to the Mac Sai menu-bar icon, or none at all.
+/// The compact value shown next to the Clean My Life menu-bar icon, or none at all.
 ///
 /// Raw values are persisted in the shared defaults suite, so they must remain
 /// stable across releases.

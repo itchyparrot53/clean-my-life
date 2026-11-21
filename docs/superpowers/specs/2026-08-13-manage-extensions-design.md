@@ -5,7 +5,7 @@ Status: Design (approved — hybrid)
 
 ## Problem
 
-Issue #53 asks Mac Sai to list third-party Safari/app extensions, Internet
+Issue #53 asks Clean My Life to list third-party Safari/app extensions, Internet
 plug-ins, and preference panes, then enable, disable, or remove them. Those
 three objects do not share one lifecycle, and Apple will not let a third-party
 app flip Safari extension elections.

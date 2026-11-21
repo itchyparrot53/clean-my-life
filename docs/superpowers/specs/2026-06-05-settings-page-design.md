@@ -33,11 +33,11 @@ A new `SettingsPageView` (replacing `SettingsView`) rendered as a native
 `.formStyle(.grouped)` form with `scrollContentBackground(.hidden)` over the graphite
 gradient. Sections top to bottom:
 
-1. **Header**: "Mac Sai" plus `MCConstants.appVersion`, trailing "Check for updates"
+1. **Header**: "Clean My Life" plus `MCConstants.appVersion`, trailing "Check for updates"
    button with inline states: idle, checking (spinner), up to date, update available.
 2. **General**:
    - *Launch at login* (new): `SMAppService.mainApp` register/unregister, default off,
-     caption: "Open Mac Sai automatically when you sign in to macOS. You can also manage
+     caption: "Open Clean My Life automatically when you sign in to macOS. You can also manage
      this in System Settings > General > Login Items." Status and error surfacing mirror
      the `MenuBarLauncher` pattern (requiresApproval and friends).
    - *Menu Bar Widget*: the existing toggle, status row, and error label move here
@@ -64,15 +64,15 @@ gradient. Sections top to bottom:
 ## Update checker
 
 - New `UpdateChecker` in MacCleanKit. GET
-  `https://api.github.com/repos/iliyami/MacSai/releases/latest` (URLSession, short
+  `https://api.github.com/repos/iliyami/CleanMyLife/releases/latest` (URLSession, short
   timeout), parse `tag_name` (strip leading "v"), compare to `MCConstants.appVersion`
   with numeric semver component comparison.
 - Result type: `upToDate`, `updateAvailable(version: String, url: URL)`,
   `failed(message: String)`.
-- Homebrew detection: installed-via-brew when `/opt/homebrew/Caskroom/mac-sai` or
-  `/usr/local/Caskroom/mac-sai` exists (paths injectable for tests).
+- Homebrew detection: installed-via-brew when `/opt/homebrew/Caskroom/clean-my-life` or
+  `/usr/local/Caskroom/clean-my-life` exists (paths injectable for tests).
 - When an update is available: brew installs get a copyable
-  `brew upgrade --cask mac-sai` row; direct installs get a button opening the release
+  `brew upgrade --cask clean-my-life` row; direct installs get a button opening the release
   page.
 - Manual check only. No network calls at launch.
 

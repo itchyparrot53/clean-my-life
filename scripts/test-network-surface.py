@@ -103,7 +103,7 @@ class NetworkSurfaceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle, framework = self.bundle_fixture(root)
-            staging = root / ".build/dmg/Mac Sai.app"
+            staging = root / ".build/dmg/Clean My Life.app"
             staging.parent.mkdir(parents=True)
             bundle.rename(staging)
             framework = staging / "Contents/Frameworks/Sparkle.framework"

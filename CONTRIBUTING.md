@@ -1,6 +1,6 @@
-# Contributing to Mac Sai
+# Contributing to Clean My Life
 
-Thank you for your interest in contributing! Mac Sai is a community-driven project and we welcome contributions of all kinds — bug fixes, new features, documentation improvements, and more.
+Thank you for your interest in contributing! Clean My Life is a community-driven project and we welcome contributions of all kinds — bug fixes, new features, documentation improvements, and more.
 
 ## Code of Conduct
 
@@ -9,7 +9,7 @@ Be respectful, constructive, and inclusive. We're building software together.
 ## Getting Started
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/MacSai.git`
+2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/clean-my-life.git`
 3. **Build**: `swift build`
 4. **Run tests**: `swift test` (must pass with 0 failures)
 5. **Create a branch**: `git checkout -b feature/your-feature`
@@ -152,7 +152,7 @@ Sources/MacClean/Views/YourSection/
 ### What NOT to Do
 
 - Don't bypass `SafetyGuard` for file operations
-- Don't add network calls without discussion (Mac Sai is offline-first)
+- Don't add network calls without discussion (Clean My Life is offline-first)
 - Don't add telemetry or analytics
 - Don't add third-party dependencies without an issue discussion first
 - Don't modify protected paths lists without security review

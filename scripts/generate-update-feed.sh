@@ -18,7 +18,7 @@ if [[ ! -x "$TOOL" || ! -x "$VERIFY_TOOL" ]]; then
     echo "ERROR: resolve the pinned Sparkle package before generating updates"
     exit 1
 fi
-VERIFY_DIR="$(mktemp -d "${TMPDIR:-/tmp}/macsai-appcast.XXXXXX")"
+VERIFY_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cleanmylife-appcast.XXXXXX")"
 trap 'rm -rf "$VERIFY_DIR"' EXIT
 CANDIDATE="$VERIFY_DIR/appcast.xml"
 OPTIONS=(--download-url-prefix "$PREFIX" --release-notes-url-prefix "$PREFIX"

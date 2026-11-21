@@ -207,11 +207,11 @@ final class UpdateCheckerTests: XCTestCase {
 
     func testParseValidPayload() throws {
         let json = """
-        {"tag_name": "v1.10.0", "html_url": "https://github.com/iliyami/MacSai/releases/tag/v1.10.0", "name": "1.10.0"}
+        {"tag_name": "v1.10.0", "html_url": "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0", "name": "1.10.0"}
         """
         let parsed = try XCTUnwrap(UpdateChecker.parseLatestRelease(Data(json.utf8)))
         XCTAssertEqual(parsed.version, "1.10.0")
-        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/iliyami/MacSai/releases/tag/v1.10.0")
+        XCTAssertEqual(parsed.url.absoluteString, "https://github.com/iliyami/CleanMyLife/releases/tag/v1.10.0")
     }
 
     func testParseRejectsGarbage() {
@@ -230,7 +230,7 @@ final class UpdateCheckerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         XCTAssertTrue(UpdateChecker.isHomebrewInstall(caskroomPaths: [tmp.path]))
-        XCTAssertFalse(UpdateChecker.isHomebrewInstall(caskroomPaths: ["/nonexistent/caskroom/mac-sai"]))
+        XCTAssertFalse(UpdateChecker.isHomebrewInstall(caskroomPaths: ["/nonexistent/caskroom/clean-my-life"]))
     }
 }
 ```
@@ -247,10 +247,10 @@ In `Sources/MacCleanKit/Constants.swift`, immediately before the `// MARK: - App
 ```swift
     // MARK: - Project links
 
-    public static let repoURL = URL(string: "https://github.com/iliyami/MacSai")!
-    public static let issuesURL = URL(string: "https://github.com/iliyami/MacSai/issues/new/choose")!
-    public static let releasesURL = URL(string: "https://github.com/iliyami/MacSai/releases")!
-    public static let latestReleaseAPI = URL(string: "https://api.github.com/repos/iliyami/MacSai/releases/latest")!
+    public static let repoURL = URL(string: "https://github.com/iliyami/CleanMyLife")!
+    public static let issuesURL = URL(string: "https://github.com/iliyami/CleanMyLife/issues/new/choose")!
+    public static let releasesURL = URL(string: "https://github.com/iliyami/CleanMyLife/releases")!
+    public static let latestReleaseAPI = URL(string: "https://api.github.com/repos/iliyami/CleanMyLife/releases/latest")!
 
 ```
 
@@ -306,12 +306,12 @@ public enum UpdateChecker {
 
     /// Caskroom locations for Apple Silicon and Intel Homebrew prefixes.
     public static let defaultCaskroomPaths = [
-        "/opt/homebrew/Caskroom/mac-sai",
-        "/usr/local/Caskroom/mac-sai",
+        "/opt/homebrew/Caskroom/clean-my-life",
+        "/usr/local/Caskroom/clean-my-life",
     ]
 
     /// True when the app was installed via the Homebrew cask. The Settings
-    /// UI then shows `brew upgrade --cask mac-sai` instead of a DMG link,
+    /// UI then shows `brew upgrade --cask clean-my-life` instead of a DMG link,
     /// so brew's receipt and the installed app never drift.
     public static func isHomebrewInstall(
         caskroomPaths: [String] = defaultCaskroomPaths,
@@ -688,7 +688,7 @@ struct SettingsPageView: View {
         }
     }
 
-    static let brewUpgradeCommand = "brew upgrade --cask mac-sai"
+    static let brewUpgradeCommand = "brew upgrade --cask clean-my-life"
 
     @MainActor
     private func startUpdateCheck() {

@@ -496,9 +496,9 @@ struct ComponentGallery: View {
                     PrimaryButton(label: "Clean", meta: "0 bytes", isEnabled: false) {}
                 }
                 HStack(spacing: 12) {
-                    Button("Configure…") {}.buttonStyle(.secondaryPill)
-                    Button("View All 44 Items…") {}.buttonStyle(.secondaryPill)
-                    Button("Review Details…") {}.buttonStyle(.ghostPill)
+                    Button("Configure…") { /* gallery sample */ }.buttonStyle(.secondaryPill)
+                    Button("View All 44 Items…") { /* gallery sample */ }.buttonStyle(.secondaryPill)
+                    Button("Review Details…") { /* gallery sample */ }.buttonStyle(.ghostPill)
                     Clean1SearchField(text: $search)
                 }
                 HStack(spacing: 14) {

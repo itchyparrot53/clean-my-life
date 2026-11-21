@@ -12,7 +12,9 @@ struct DownloadsScanner: Sendable {
         let items: [FileItem]
     }
 
-    func scan() -> (result: ScanResult?, groups: [Group]) {
+    /// `progress` receives a 0...1 fraction and a short phase, so a large
+    /// Downloads folder does not sit on one number while it walks.
+    func scan(progress: (@Sendable (Double, String) -> Void)? = nil) -> (result: ScanResult?, groups: [Group]) {
         let folder = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads")
         let keys: [URLResourceKey] = [.isDirectoryKey, .isPackageKey, .contentModificationDateKey, .contentAccessDateKey]
         guard let entries = try? FileManager.default.contentsOfDirectory(
@@ -20,7 +22,8 @@ struct DownloadsScanner: Sendable {
 
         var items: [FileItem] = []
         var sourceOf: [URL: String] = [:]
-        for url in entries {
+        progress?(0, "Reading your Downloads folder…")
+        for (index, url) in entries.enumerated() {
             let values = try? url.resourceValues(forKeys: Set(keys))
             let isDirectory = (values?.isDirectory ?? false) && !(values?.isPackage ?? false)
             let size = isDirectory || (values?.isPackage ?? false) ? AIClutterScanner.folderSize(url) : AIClutterScanner.allocated(url)
@@ -29,6 +32,8 @@ struct DownloadsScanner: Sendable {
                                   modificationDate: values?.contentModificationDate,
                                   lastAccessDate: values?.contentAccessDate))
             sourceOf[url] = Self.source(of: url)
+            progress?(Double(index + 1) / Double(max(entries.count, 1)),
+                      "Reading \(url.lastPathComponent)…")
         }
         items.sort { $0.size > $1.size }
 

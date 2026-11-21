@@ -31,7 +31,7 @@ Not a `ScanModule`. Not in Smart Scan.
 
 - Do not write `TCC.db`. Do not disable SIP. Do not add a privileged helper.
 - Do not call `tccutil reset`.
-- Do not claim we can toggle a grant inside Mac Sai.
+- Do not claim we can toggle a grant inside Clean My Life.
 - Accessibility, Input Monitoring, Files & Folders, Photos, Contacts — follow-up.
 - No `Localizable.strings` migration; `L10n.tr` only.
 

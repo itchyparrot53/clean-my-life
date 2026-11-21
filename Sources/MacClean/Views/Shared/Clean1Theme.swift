@@ -53,7 +53,7 @@ extension SidebarItem {
         case .uninstaller, .unusedApps, .extensions: .applications
         case .updater: .updater
         case .spaceLens, .duplicates, .similarPhotos: .spaceMap
-        case .screenshots: .largeOld
+        case .screenshots, .browserTabs: .largeOld
         case .largeOldFiles, .downloadsCleanup: .largeOld
         case .shredder: .shredder
         case .settings, .tools: .slate

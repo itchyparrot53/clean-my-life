@@ -22,7 +22,7 @@ final class ReadmeTelemetrySectionTests: XCTestCase {
         )
         try assertLiveSocketScope(in: src, fileName: fileName)
         XCTAssertTrue(
-            src.contains("bash scripts/check-network-surface.sh \"/Applications/Mac Sai.app\""),
+            src.contains("bash scripts/check-network-surface.sh \"/Applications/Clean My Life.app\""),
             "\(fileName) must check the installed bundle, not only the main executable or source"
         )
         for component in ["Sparkle.framework", "Autoupdate", "Updater.app", "Downloader.xpc", "Installer.xpc"] {
@@ -37,7 +37,7 @@ final class ReadmeTelemetrySectionTests: XCTestCase {
             .compactMap { $0.components(separatedBy: "```").first }
         let snippet = try XCTUnwrap(blocks.first { $0.contains("lsof") }, "\(fileName) needs a live socket command")
         try TestFixtures.withTempDir { directory in
-            let app = directory.appending(path: "Mac Sai.app")
+            let app = directory.appending(path: "Clean My Life.app")
             let commands = directory.appending(path: "commands")
             let socketArguments = directory.appending(path: "socket-arguments")
             try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
@@ -65,7 +65,7 @@ final class ReadmeTelemetrySectionTests: XCTestCase {
             }
             let process = Process()
             process.executableURL = URL(filePath: "/bin/bash")
-            process.arguments = ["-c", snippet.replacingOccurrences(of: "/Applications/Mac Sai.app", with: app.path)]
+            process.arguments = ["-c", snippet.replacingOccurrences(of: "/Applications/Clean My Life.app", with: app.path)]
             process.environment = [
                 "PATH": commands.path + ":/usr/bin:/bin:/usr/sbin:/sbin",
                 "MACSAI_TEST_APP": app.resolvingSymlinksInPath().path,
@@ -96,89 +96,17 @@ final class ReadmeTelemetrySectionTests: XCTestCase {
         )
     }
 
-    func testChineseReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.zh-CN.md",
-            headingNeedle: "自行验证无遥测"
-        )
-    }
 
-    func testRussianReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.ru.md",
-            headingNeedle: "Проверьте отсутствие телеметрии сами"
-        )
-    }
 
-    func testGermanReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.de.md",
-            headingNeedle: "Telemetriefreiheit selbst überprüfen"
-        )
-    }
 
-    func testTraditionalChineseReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.zh-Hant.md",
-            headingNeedle: "自行驗證無遙測"
-        )
-    }
 
-    func testFrenchReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.fr.md",
-            headingNeedle: "Vérifiez l'absence de télémétrie vous-même"
-        )
-    }
 
-    func testSpanishReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.es.md",
-            headingNeedle: "Verifica tú mismo que no hay telemetría"
-        )
-    }
 
-    func testItalianReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.it.md",
-            headingNeedle: "Verifica tu stesso l'assenza di telemetria"
-        )
-    }
 
-    func testBrazilianPortugueseReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.pt-BR.md",
-            headingNeedle: "Verifique você mesmo a ausência de telemetria"
-        )
-    }
 
-    func testJapaneseReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.ja.md",
-            headingNeedle: "テレメトリがないことを自分で確認する"
-        )
-    }
 
-    func testKoreanReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.ko.md",
-            headingNeedle: "텔레메트리 없음을 직접 확인하기"
-        )
-    }
 
-    func testTurkishReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.tr.md",
-            headingNeedle: "Telemetri olmadığını kendiniz doğrulayın"
-        )
-    }
 
-    func testFarsiReadmeHasVerifyNoTelemetrySection() throws {
-        try assertTelemetrySection(
-            in: "README.fa.md",
-            headingNeedle: "نبود تله\u{200C}متری را خودتان بررسی کنید"
-        )
-    }
 
     /// A MalwareBazaar hit on a signed file makes macOS check the signing
     /// certificate's revocation status with Apple (OCSP). That request comes
@@ -187,18 +115,6 @@ final class ReadmeTelemetrySectionTests: XCTestCase {
     func testEveryReadmeDisclosesTheRevocationLookup() throws {
         let needles = [
             "README.md": "signing certificate was revoked",
-            "README.fr.md": "certificat de signature a été révoqué",
-            "README.de.md": "Signaturzertifikat widerrufen wurde",
-            "README.ru.md": "не отозван ли его сертификат подписи",
-            "README.zh-CN.md": "签名证书是否已被吊销",
-            "README.zh-Hant.md": "簽署憑證是否已被撤銷",
-            "README.es.md": "certificado de firma fue revocado",
-            "README.it.md": "certificato di firma è stato revocato",
-            "README.pt-BR.md": "certificado de assinatura foi revogado",
-            "README.ja.md": "署名証明書が失効しているかどうか",
-            "README.ko.md": "서명 인증서가 폐기되었는지",
-            "README.tr.md": "imzalama sertifikasının iptal edilip edilmediğini",
-            "README.fa.md": "گواهی امضای آن باطل شده است",
         ]
         for (file, needle) in needles {
             let src = try String(contentsOf: readmeURL(file), encoding: .utf8)

@@ -208,12 +208,12 @@ Append these methods inside `UpdateSchedulerTests`:
         let a = UpdateScheduler.updateAction(
             isHomebrew: true,
             releaseURL: URL(string: "https://example.com")!,
-            brewCommand: "brew upgrade --cask mac-sai")
-        XCTAssertEqual(a, .brewCommand("brew upgrade --cask mac-sai"))
+            brewCommand: "brew upgrade --cask clean-my-life")
+        XCTAssertEqual(a, .brewCommand("brew upgrade --cask clean-my-life"))
     }
 
     func testActionForDMGIsOpenRelease() {
-        let url = URL(string: "https://github.com/iliyami/MacSai/releases/tag/v1.13.0")!
+        let url = URL(string: "https://github.com/iliyami/CleanMyLife/releases/tag/v1.13.0")!
         let a = UpdateScheduler.updateAction(
             isHomebrew: false, releaseURL: url, brewCommand: "ignored")
         XCTAssertEqual(a, .openRelease(url))
@@ -326,7 +326,7 @@ final class UpdateCoordinator {
         let action = UpdateScheduler.updateAction(
             isHomebrew: UpdateChecker.isHomebrewInstall(),
             releaseURL: url,
-            brewCommand: "brew upgrade --cask mac-sai"
+            brewCommand: "brew upgrade --cask clean-my-life"
         )
         pendingUpdate = PendingUpdate(version: version, action: action)
     }
@@ -454,12 +454,12 @@ Replace it with:
             switch pending.action {
             case .brewCommand(let cmd):
                 Text(L10n.tr(
-                    "Mac Sai \(pending.version) 已发布。使用 Homebrew 升级：\n\(cmd)",
-                    "Mac Sai \(pending.version) is available. Upgrade with Homebrew:\n\(cmd)"))
+                    "Clean My Life \(pending.version) 已发布。使用 Homebrew 升级：\n\(cmd)",
+                    "Clean My Life \(pending.version) is available. Upgrade with Homebrew:\n\(cmd)"))
             case .openRelease:
                 Text(L10n.tr(
-                    "Mac Sai \(pending.version) 已发布。",
-                    "Mac Sai \(pending.version) is available."))
+                    "Clean My Life \(pending.version) 已发布。",
+                    "Clean My Life \(pending.version) is available."))
             }
         }
 ```
@@ -622,7 +622,7 @@ Expected: `Version sync OK: 1.13.0`, `Build complete!`, and the full suite passe
 Run: `bash scripts/dev-install.sh`
 Then verify:
 - Launch the app. With `lastUpdateCheckDate` unset and a real newer release present, the alert appears ~3s after launch. (To force it during testing, temporarily set the app's `appVersion` lower, or run `defaults delete com.macclean.app lastUpdateCheckDate` and ensure a newer GitHub release exists.)
-- Homebrew install shows "Copy Upgrade Command"; copying puts `brew upgrade --cask mac-sai` on the clipboard. Direct install shows "Download" and opens the release page.
+- Homebrew install shows "Copy Upgrade Command"; copying puts `brew upgrade --cask clean-my-life` on the clipboard. Direct install shows "Download" and opens the release page.
 - "Skip This Version" then relaunch: no popup for that version. `defaults read com.macclean.app skippedUpdateVersion` shows the version.
 - Settings shows the "Automatically check for updates" toggle (on) and a "Last checked" line after a check. Turning it off and relaunching: no automatic popup.
 

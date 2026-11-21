@@ -3,7 +3,7 @@ import Foundation
 
 /// Detects a browser holding its profile open, independent of the app's name
 /// or install location. Used together with the running-apps check: if either
-/// says "in use", Mac Sai never deletes.
+/// says "in use", Clean My Life never deletes.
 public enum BrowserProfileLock {
     /// Chromium creates a `SingletonLock` symlink in the user data folder
     /// while running and removes it on exit. The target never exists on disk,

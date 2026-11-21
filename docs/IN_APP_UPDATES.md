@@ -9,7 +9,7 @@ Existing `automaticUpdateChecks` choices migrate on the first launch; later
 choices made in Sparkle's window are respected. Homebrew installations retain
 their Homebrew route.
 
-The first version containing Sparkle must be installed normally. Earlier Mac Sai
+The first version containing Sparkle must be installed normally. Earlier Clean My Life
 versions only open a release page and cannot install their own bootstrap update.
 
 ## Trust and configuration
@@ -44,7 +44,7 @@ into command arguments, or distribute it with an archive.
 
 1. Configure repository variables `SPARKLE_FEED_URL` and
    `SPARKLE_PUBLIC_ED_KEY`. For the existing GitHub release workflow the feed can
-   be `https://github.com/iliyami/MacSai/releases/latest/download/appcast.xml`.
+   be `https://github.com/itchyparrot53/clean-my-life/releases/latest/download/appcast.xml`.
    This is a suggested deployment location, not a claim that it is already live.
 2. The release owner creates the GitHub Actions environment `sparkle-release`,
    restricts its deployment branches to `main`, and enables a required reviewer.
@@ -71,7 +71,7 @@ into command arguments, or distribute it with an archive.
    the first official feed and every later stable release. The workflow reads
    that release's final body, downloads its existing DMG, and verifies its
    published SHA-256/size. It mounts the DMG read-only and checks the single
-   top-level `Mac Sai.app`: its identity, release version, embedded feed URL and
+   top-level `Clean My Life.app`: its identity, release version, embedded feed URL and
    public key must match the selected release and current configuration, and
    required signature/privacy settings must be intact. An ambiguous app,
    escaping symlink, configuration drift or mount failure stops the job before
@@ -114,14 +114,14 @@ deleted by this workflow. Neither historical assets nor tags are deleted.
 If the job is interrupted during promotion, inspect the release assets first:
 
 ```sh
-gh release view vX.Y.Z --repo OWNER/MacSai --json assets
+gh release view vX.Y.Z --repo itchyparrot53/clean-my-life --json assets
 ```
 
 Use the previous asset ID printed in the job log to restore its name if no
 `appcast.xml` exists:
 
 ```sh
-gh api --method PATCH repos/OWNER/MacSai/releases/assets/PREVIOUS_ASSET_ID \
+gh api --method PATCH repos/itchyparrot53/clean-my-life/releases/assets/PREVIOUS_ASSET_ID \
   -f name=appcast.xml
 ```
 
@@ -194,7 +194,7 @@ queue promptly, and never becomes an active operation later. Cancelling an
 update wait releases only that request, keeping any other update's gate closed.
 No timeout permits installation over active file operations.
 
-Before replacement, Mac Sai suspends its menu-helper watchdog, requests the
+Before replacement, Clean My Life suspends its menu-helper watchdog, requests the
 helper to exit, and waits for its exit. A timed-out helper stop leaves the update
 pending with a retry action; it never force-kills unrelated applications. Normal
 Quit also prepares the helper when Sparkle has staged an install-on-quit update.
@@ -203,7 +203,7 @@ launched app reuses the saved menu preference and launches its newly embedded
 helper through the usual path.
 
 Without a staged update, Quit retains the existing application behavior
-(`.terminateNow`). With a staged update, Mac Sai returns `.terminateCancel` for
+(`.terminateNow`). With a staged update, Clean My Life returns `.terminateCancel` for
 the current AppKit request while it prepares installation asynchronously. If an
 operation is still running, the user can choose to wait and quit afterwards or
 keep the app open. Once the operations and helper are ready, the app requests
@@ -226,6 +226,6 @@ installer abort/skip uses a separate reset path. No AppKit termination reply is
 left pending after cancelling preparation.
 
 If the original request came from macOS logout, restart or shutdown, waiting for
-a staged update can cancel that system request. Mac Sai finishing its own Quit
+a staged update can cancel that system request. Clean My Life finishing its own Quit
 later does not resume the original logout, restart or shutdown. Start the
-system action again after the app has finished; Mac Sai does not reissue it.
+system action again after the app has finished; Clean My Life does not reissue it.

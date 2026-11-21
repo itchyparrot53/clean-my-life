@@ -1,0 +1,33 @@
+Clean My Life
+Copyright (c) 2026 Clean My Life Contributors
+
+This product is a fork of the Mac Sai project.
+Mac Sai, Copyright (c) 2026 Mac Sai Contributors, BSD-3-Clause.
+https://github.com/iliyami/MacSai
+
+The full BSD-3-Clause licence and disclaimer are in LICENSE.
+
+Third-party notices
+-------------------
+
+YARA-X
+  Copyright (c) VirusTotal.
+  BSD-3-Clause.
+  https://github.com/VirusTotal/yara-x
+
+Elastic protections-artifacts (macOS and cross-platform YARA rules)
+  Copyright (c) Elasticsearch B.V.
+  Elastic License 2.0. The licence text ships beside the rules in
+  Sources/MacClean/MalwareRules/elastic/LICENSE.txt.
+
+Apple XProtect
+  Apple's XProtect.yara and the Safari extension blocklist are read from
+  macOS at runtime. They are not redistributed with this app.
+
+Sparkle
+  Copyright (c) Andy Matuschak, Kornel Lesinski and contributors.
+  MIT licence. https://github.com/sparkle-project/Sparkle
+
+GRDB
+  Copyright (c) Gwendal Roue.
+  MIT licence. https://github.com/groue/GRDB.swift

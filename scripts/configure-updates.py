@@ -36,7 +36,7 @@ def configuration(environment):
         "SUShowReleaseNotes": True,
     }
     if environment.get("UPDATE_CHANNEL_NAME"):
-        result["MacSaiUpdateChannelName"] = environment["UPDATE_CHANNEL_NAME"]
+        result["CleanMyLifeUpdateChannelName"] = environment["UPDATE_CHANNEL_NAME"]
     return result
 
 

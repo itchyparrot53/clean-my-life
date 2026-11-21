@@ -1,7 +1,7 @@
 import Foundation
 
 /// Which `.lproj` language folders are kept (excluded) during Language Files
-/// cleanup. A small always-kept default set (Base + Mac Sai's interface
+/// cleanup. A small always-kept default set (Base + Clean My Life's interface
 /// languages), the languages the Mac itself is set to, plus any extra
 /// languages the user opts to keep, persisted in UserDefaults. The effective
 /// set is never empty, so cleanup can never wipe the UI's own language.

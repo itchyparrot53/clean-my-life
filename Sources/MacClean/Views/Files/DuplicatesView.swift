@@ -31,7 +31,7 @@ struct DuplicatesView: View {
     /// the user taps Consolidate. Never computed in the body: the disk-touching
     /// estimate there re-ran on every checkbox toggle and froze the UI (#128).
     @State private var consolidateEstimate: UInt64 = 0
-    /// Our suggested keep per set: Mac Sai's original, remembered so the
+    /// Our suggested keep per set: Clean My Life's original, remembered so the
     /// "Suggested" caption survives the user picking another copy.
     private var suggestedKeep: [UUID: URL] {
         Dictionary(uniqueKeysWithValues: originalByGroup.map { ($0.key, $0.value) })

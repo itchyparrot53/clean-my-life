@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a tool, a rule source or an improvement.
+title: 'feat: '
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The user problem, not just the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area?
+      options:
+        - Malware detection or rules
+        - Cleanup tools
+        - Photos, screenshots or downloads
+        - Applications / Updater
+        - Performance / Maintenance
+        - Interface / accessibility
+        - Build, tests or release
+        - Documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I understand that anything that deletes data needs a review-first path and tests.
+          required: true

@@ -1,6 +1,8 @@
-# Mac Sai Testing Plan
+# Clean My Life Testing Plan
 
-This document is the engineering plan for getting Mac Sai from "65 tests passing" to "real, defensible test coverage." It's both a roadmap for contributors and a public commitment to safety standards.
+> Historical roadmap from upstream Clean My Life. The suite is now more than 1,000 tests; the current commands are in the README and `docs/RELEASING.md`.
+
+This document is the engineering plan for getting Clean My Life from "65 tests passing" to "real, defensible test coverage." It's both a roadmap for contributors and a public commitment to safety standards.
 
 ## TL;DR
 

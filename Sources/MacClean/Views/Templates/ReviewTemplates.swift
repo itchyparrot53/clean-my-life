@@ -5,7 +5,7 @@ import MacCleanKit
 // MARK: - Review, in-module (§4.4)
 
 /// Category column on the left, the chosen category's items on the right.
-/// The item list is Mac Sai's FileListView, which copes with hundreds of
+/// The item list is Clean My Life's FileListView, which copes with hundreds of
 /// thousands of rows; the columns around it are ours.
 struct ReviewTemplate: View {
     let results: [ScanResult]
@@ -479,7 +479,7 @@ private struct FocusIf: ViewModifier {
     }
 }
 
-/// Mac Sai's own List-based content, blended onto the card.
+/// Clean My Life's own List-based content, blended onto the card.
 extension View {
     func cardList() -> some View {
         self

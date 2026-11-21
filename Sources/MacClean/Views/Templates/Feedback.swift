@@ -8,7 +8,7 @@ import MacCleanKit
 
 /// One toast at a time, shown at the bottom centre of the card above the
 /// primary button. After a clean it offers Undo, which puts the last
-/// cleaning session back from the Trash via Mac Sai's Clean History.
+/// cleaning session back from the Trash via Clean My Life's Clean History.
 @MainActor
 @Observable
 final class ToastCenter {

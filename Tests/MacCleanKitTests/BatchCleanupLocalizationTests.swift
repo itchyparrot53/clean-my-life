@@ -5,10 +5,10 @@ final class BatchCleanupLocalizationTests: AppLanguageTestCase {
     func testPermissionsAndCleanupResultsDoNotFallBackToEnglishOrSimplifiedChinese() {
         let keys = [
             "清理权限",
-            "允许 Mac Sai 扫描邮件、浏览器数据和其他受保护的文件夹。在系统设置中添加 Mac Sai 并开启权限，然后重新启动应用并重新扫描。",
+            "允许 Clean My Life 扫描邮件、浏览器数据和其他受保护的文件夹。在系统设置中添加 Clean My Life 并开启权限，然后重新启动应用并重新扫描。",
             "打开完全磁盘访问设置",
             "管理员确认",
-            "移动受保护的项目时，macOS 可能仍会要求密码或触控 ID。完全磁盘访问权限不能代替管理员确认。Mac Sai 不保存您的密码，也不能提前批准所有操作。",
+            "移动受保护的项目时，macOS 可能仍会要求密码或触控 ID。完全磁盘访问权限不能代替管理员确认。Clean My Life 不保存您的密码，也不能提前批准所有操作。",
             "批量移到废纸篓",
             "清理会将选中的项目分组交给 macOS，减少逐项请求。系统决定是否需要再次确认。取消后，当前组会先完成；已移动的项目仍会显示在清理历史中。",
             "权限",

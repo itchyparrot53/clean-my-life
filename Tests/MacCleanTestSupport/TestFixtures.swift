@@ -129,7 +129,7 @@ public enum TestFixtures {
 // MARK: - FakeHome
 
 /// A synthetic `~/Library/...` directory tree, rooted in a temp dir.
-/// Mirrors the subset of paths Mac Sai cares about.
+/// Mirrors the subset of paths Clean My Life cares about.
 public final class FakeHome {
     public let root: URL
 

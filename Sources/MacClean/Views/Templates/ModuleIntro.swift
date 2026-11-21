@@ -295,6 +295,17 @@ extension SidebarItem {
                     B(symbol: "folder", title: "Or file them away",
                       body: "Move the ones you want to keep into Pictures, one folder per month."),
                 ])
+        case .browserTabs:
+            return ModuleIntro(
+                heroSymbol: "square.on.square",
+                subtitle: "Every open tab, the duplicates, and the ones you can close.",
+                bullets: [
+                    B(symbol: "globe", title: "Safari, Chrome, Brave and Edge",
+                      body: "macOS asks for Automation permission the first time. Nothing is read until you approve it."),
+                    B(symbol: "doc.on.doc", title: "Duplicates stand out",
+                      body: "The same URL open more than once is marked, so you can keep the newest and close the rest."),
+                ],
+                action: "Read tabs")
         case .tools:
             return ModuleIntro(heroSymbol: "square.grid.2x2", subtitle: "Smaller tools, one click away.", bullets: [], action: "Open")
         }

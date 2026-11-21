@@ -154,7 +154,7 @@ struct SystemJunkView: View {
     private func requestCleanup() {
         guard viewModel.selectedCount > 0 else { return }
         let results = viewModel.results, selection = viewModel.selectedItems
-        // Mac Sai's review rule still always asks; ours adds the safe-item
+        // Clean My Life's review rule still always asks; ours adds the safe-item
         // opt-out. Open at once; the open-apps check fills in afterwards.
         runningApps = []
         let ask = CleanupSelectionPolicy.requiresReview(in: results, selection: selection)

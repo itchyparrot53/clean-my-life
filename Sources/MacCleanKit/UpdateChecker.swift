@@ -56,12 +56,12 @@ public enum UpdateChecker {
 
     /// Caskroom locations for Apple Silicon and Intel Homebrew prefixes.
     public static let defaultCaskroomPaths = [
-        "/opt/homebrew/Caskroom/mac-sai",
-        "/usr/local/Caskroom/mac-sai",
+        "/opt/homebrew/Caskroom/clean-my-life",
+        "/usr/local/Caskroom/clean-my-life",
     ]
 
     /// True when the app was installed via the Homebrew cask. The Settings
-    /// UI then shows `brew upgrade --cask mac-sai` instead of a DMG link,
+    /// UI then shows `brew upgrade --cask clean-my-life` instead of a DMG link,
     /// so brew's receipt and the installed app never drift.
     public static func isHomebrewInstall(
         caskroomPaths: [String] = defaultCaskroomPaths,

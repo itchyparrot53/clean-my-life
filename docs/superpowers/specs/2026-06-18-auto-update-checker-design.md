@@ -5,7 +5,7 @@ Status: Design (awaiting review)
 
 ## Problem
 
-Mac Sai only checks for its own updates when the user clicks "Check for Updates"
+Clean My Life only checks for its own updates when the user clicks "Check for Updates"
 in Settings. Most users never open Settings, so they stay on old versions and
 miss fixes. We want the app to detect a newer release on its own and surface it,
 without nagging.
@@ -14,12 +14,12 @@ without nagging.
 
 When a newer stable release exists, show the user a popup that points them to the
 right way to update for how they installed the app, on a cadence that does not
-annoy. Keep it lightweight, testable, and aligned with how Mac Sai is actually
+annoy. Keep it lightweight, testable, and aligned with how Clean My Life is actually
 distributed (Homebrew cask first, direct DMG second).
 
 ## Non-goals
 
-- No Sparkle, no in-app one-click auto-download/install. Mac Sai is distributed
+- No Sparkle, no in-app one-click auto-download/install. Clean My Life is distributed
   primarily through Homebrew; installing a new build in place corrupts brew's
   receipt and causes version drift. An in-app installer is also a new
   security-sensitive code path for an app whose pitch is "notarized, auditable,
@@ -43,7 +43,7 @@ Homebrew detection) with:
 The action the popup offers depends on install source (already detectable via
 `UpdateChecker.isHomebrewInstall()`):
 
-- Homebrew install: show the copyable `brew upgrade --cask mac-sai` command and
+- Homebrew install: show the copyable `brew upgrade --cask clean-my-life` command and
   an "Open Releases" link. Do not attempt to overwrite the cask.
 - Direct/DMG install: a "Download" button that opens the release page, plus
   "Later".

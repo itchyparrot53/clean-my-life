@@ -106,9 +106,13 @@ final class MenuBarLauncherTests: XCTestCase {
     }
 
     func testQuitMonitorSetsSharedUserQuitFlag() throws {
-        let src = try String(contentsOf: sourceURL("Sources/MacCleanMenu/MacCleanMenuApp.swift"), encoding: .utf8)
+        // The Quit action lives in the popover; the app entry point keeps the
+        // watchdog. Check both so moving the menu code cannot silently drop
+        // the shared user-quit flag.
+        let sources = ["Sources/MacCleanMenu/MacCleanMenuApp.swift", "Sources/MacCleanMenu/MenuPopover.swift"]
+        let text = try sources.map { try String(contentsOf: sourceURL($0), encoding: .utf8) }.joined(separator: "\n")
         XCTAssertTrue(
-            src.contains("MenuBarKeepAlive.setUserQuit(true"),
+            text.contains("MenuBarKeepAlive.setUserQuit(true"),
             "Quit Monitor must set the shared user-quit flag so the watchdog does not immediately relaunch"
         )
     }

@@ -4,7 +4,7 @@ import Observation
 import Sparkle
 
 /// Sparkle owns release notes, signature validation, download, replacement and
-/// relaunch. This adapter owns Mac Sai preferences and its operation lifecycle.
+/// relaunch. This adapter owns Clean My Life preferences and its operation lifecycle.
 @MainActor
 @Observable
 final class SelfUpdateController: NSObject, SPUUpdaterDelegate {
@@ -25,7 +25,7 @@ final class SelfUpdateController: NSObject, SPUUpdaterDelegate {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? MCConstants.appVersion
     }
 
-    // Clean1 fork: the in-app updater stays off so Sparkle never installs Mac Sai over our build.
+    // Clean1 fork: the in-app updater stays off so Sparkle never installs Clean My Life over our build.
     var usesInAppUpdates: Bool { MCConstants.upstreamUpdateChecksEnabled && isConfigured && !isHomebrew }
 
     @ObservationIgnored private let configuration: SelfUpdateConfiguration?

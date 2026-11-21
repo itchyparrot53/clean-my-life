@@ -17,7 +17,7 @@ final class NoEmptyButtonActionsTests: XCTestCase {
         // Matches `Button(...) {}` and `Button(...) { }` (empty trailing
         // closure) but NOT `Button(..., role: .cancel) { }` which is a
         // legitimate no-op dismiss inside an .alert.
-        let emptyAction = #"Button\((?!.*role:\s*\.cancel)[^)]*\)\s*\{\s*\}"#
+        let emptyAction = #"\bButton\((?!.*role:\s*\.cancel)[^)]*\)\s*\{\s*\}"#
 
         var offenders: [String] = []
         let enumerator = FileManager.default.enumerator(at: viewsDir, includingPropertiesForKeys: nil)!

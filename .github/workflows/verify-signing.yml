@@ -55,7 +55,7 @@ jobs:
         run: |
           KEY_PATH="$RUNNER_TEMP/asc_key.p8"
           echo -n "$ASC_KEY_P8_BASE64" | base64 --decode -o "$KEY_PATH"
-          xcrun notarytool store-credentials "MacSai" \
+          xcrun notarytool store-credentials "CleanMyLife" \
             --key "$KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
@@ -63,7 +63,7 @@ jobs:
           rm -f "$KEY_PATH"
           # `history` is a real authenticated API call; it succeeds only if the
           # key id, issuer, and .p8 are all valid.
-          xcrun notarytool history --keychain-profile "MacSai" | head -20
+          xcrun notarytool history --keychain-profile "CleanMyLife" | head -20
           echo "OK: notary credentials authenticated"
 
       - name: Clean up keychain

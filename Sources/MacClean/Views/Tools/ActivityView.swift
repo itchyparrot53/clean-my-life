@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import MacCleanKit
 
-/// Activity (UI_SPEC §5.23), built on Mac Sai's Clean History: four big
+/// Activity (UI_SPEC §5.23), built on Clean My Life's Clean History: four big
 /// metrics, a timeline of cleans with Undo where items are still in the
 /// Trash, and a Mac health card.
 struct ActivityView: View {

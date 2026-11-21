@@ -85,7 +85,7 @@ def release_snapshot(github, repository, tag):
             "Requested tag is no longer the latest stable release; select the current release and rerun")
     notes = release.get("body")
     require(isinstance(notes, str) and notes.strip(), "Curated release notes must not be empty")
-    filename = f"MacSai-{tag[1:]}.dmg"
+    filename = f"CleanMyLife-{tag[1:]}.dmg"
     archives = [asset for asset in release.get("assets", []) if asset.get("name") == filename]
     require(len(archives) == 1, f"Expected exactly one already uploaded archive: {filename}")
     archive = archives[0]
@@ -120,7 +120,7 @@ def generate_feed(directory, prefix):
 
 def verify_archive_configuration(archive_path, version, environment, runner=subprocess.run):
     """Check the published app's sealed configuration without modifying its DMG."""
-    mount = Path(tempfile.mkdtemp(prefix="macsai-published-archive-")).resolve()
+    mount = Path(tempfile.mkdtemp(prefix="cleanmylife-published-archive-")).resolve()
     attached = False
     try:
         try:
@@ -137,9 +137,9 @@ def verify_archive_configuration(archive_path, version, environment, runner=subp
                   if isinstance(entity, dict) and isinstance(entity.get("mount-point"), str)]
         require(points == [mount], "Archive must mount exactly one volume at the requested location")
         apps = [entry for entry in mount.iterdir() if entry.suffix.lower() == ".app"]
-        app = mount / "Mac Sai.app"
+        app = mount / "Clean My Life.app"
         require(apps == [app] and app.is_dir() and not app.is_symlink(),
-                "Published archive must contain exactly one top-level Mac Sai.app, not an app symlink")
+                "Published archive must contain exactly one top-level Clean My Life.app, not an app symlink")
         info_path = app / "Contents/Info.plist"
         require(info_path.is_file() and not info_path.is_symlink()
                 and info_path.resolve().is_relative_to(app.resolve()),
@@ -183,7 +183,7 @@ def publish(repository, tag, environment, github=None, generator=generate_feed,
     github = github or GitHub(repository)
     snapshot = release_snapshot(github, repository, tag)
     prefix = f"https://github.com/{repository}/releases/download/{tag}/"
-    with tempfile.TemporaryDirectory(prefix="macsai-publish-feed-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="cleanmylife-publish-feed-") as temporary:
         directory = Path(temporary)
         archive = snapshot["archive"]
         archive_path = directory / archive["name"]

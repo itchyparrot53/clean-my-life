@@ -107,14 +107,14 @@ struct ContentView: View {
             switch pending.action {
             case .brewCommand(let cmd):
                 Text(L10n.tr(
-                    "Mac Sai \(pending.version) 已发布。使用 Homebrew 升级：\n\(cmd)",
-                    "Mac Sai \(pending.version) is available. Upgrade with Homebrew:\n\(cmd)",
-                    "Доступна версия Mac Sai \(pending.version). Обновите через Homebrew:\n\(cmd)"))
+                    "Clean My Life \(pending.version) 已发布。使用 Homebrew 升级：\n\(cmd)",
+                    "Clean My Life \(pending.version) is available. Upgrade with Homebrew:\n\(cmd)",
+                    "Доступна версия Clean My Life \(pending.version). Обновите через Homebrew:\n\(cmd)"))
             case .openRelease:
                 Text(L10n.tr(
-                    "Mac Sai \(pending.version) 已发布。",
-                    "Mac Sai \(pending.version) is available.",
-                    "Доступна версия Mac Sai \(pending.version)."))
+                    "Clean My Life \(pending.version) 已发布。",
+                    "Clean My Life \(pending.version) is available.",
+                    "Доступна версия Clean My Life \(pending.version)."))
             }
         }
     }
@@ -295,6 +295,8 @@ struct ContentView: View {
             SimilarPhotosView()
         case .screenshots:
             ScreenshotsView()
+        case .browserTabs:
+            BrowserTabsView()
         case .settings:
             SettingsPageView()
         }

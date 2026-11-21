@@ -642,10 +642,10 @@ Confirm the PR includes: five categories, Settings URLs matching `PermissionMana
 
 - Protection → App Permissions → five sections visible without FDA.
 - Each Open Settings lands on the matching Privacy pane (or Privacy & Security if the fragment is ignored on that OS).
-- With FDA granted to Mac Sai: camera/mic (and FDA/screen if the system DB is readable) show real bundle ids.
+- With FDA granted to Clean My Life: camera/mic (and FDA/screen if the system DB is readable) show real bundle ids.
 - ⌘R reloads. `macclean://module/app-permissions` selects the module.
 
-- [ ] **Step 3: Open PR** (`gh pr create --repo iliyami/MacSai`) using CONTRIBUTING sections Summary / Changes / Test Plan / Checklist. `Fixes #49`. No Cursor mention. Note the ⌘7–⌘9 shift.
+- [ ] **Step 3: Open PR** (`gh pr create --repo iliyami/CleanMyLife`) using CONTRIBUTING sections Summary / Changes / Test Plan / Checklist. `Fixes #49`. No Cursor mention. Note the ⌘7–⌘9 shift.
 
 ---
 

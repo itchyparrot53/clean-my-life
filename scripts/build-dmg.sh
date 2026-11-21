@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build, sign, notarize, and package Mac Sai as a DMG.
+# Build, sign, notarize, and package Clean My Life as a DMG.
 #
 # Usage:
 #   ./scripts/build-dmg.sh                    # Build with ad-hoc signing only
@@ -27,7 +27,7 @@
 
 set -euo pipefail
 
-APP_NAME="Mac Sai"
+APP_NAME="Clean My Life"
 BUNDLE_ID="com.macclean.app"
 VERSION="${VERSION:-$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo '1.0.0')}"
 BUILD_NUMBER="${BUILD_NUMBER:-${VERSION%%-*}}"
@@ -46,9 +46,9 @@ fi
 # a 1.10.0 wrapper during dev-install testing — binary and Info.plist drift).
 DMG_DIR=".build/dmg"
 if [[ -n "${DMG_STAGING_ROOT:-}" ]]; then
-    DMG_DIR=$(mktemp -d "${DMG_STAGING_ROOT%/}/macsai-staging.XXXXXX")
+    DMG_DIR=$(mktemp -d "${DMG_STAGING_ROOT%/}/cleanmylife-staging.XXXXXX")
 fi
-DMG_NAME="MacSai-${VERSION}.dmg"
+DMG_NAME="CleanMyLife-${VERSION}.dmg"
 
 # Detect signing capability
 APP_ONLY=false
@@ -91,7 +91,7 @@ stapler_with_retry() {
     return 1
 }
 
-echo "=== Building Mac Sai v${VERSION} ==="
+echo "=== Building Clean My Life v${VERSION} ==="
 echo "Signing identity: $SIGNING_IDENTITY"
 echo "Notarize: $NOTARIZE"
 echo ""
@@ -113,7 +113,16 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 
 cp "${BUILD_DIR}/MacClean" "${APP_BUNDLE}/Contents/MacOS/"
-# Clean My Life brand images (SwiftPM resource bundle, read by BrandAssets).
+# YARA-X scanner for the malware rules (BSD-3-Clause, `brew install yara-x`).
+# Runs as its own process so a hostile file can't crash the app.
+YR_BIN="$(command -v yr || true)"
+if [ -n "$YR_BIN" ]; then
+    mkdir -p "${APP_BUNDLE}/Contents/Helpers"
+    cp "$YR_BIN" "${APP_BUNDLE}/Contents/Helpers/yr"
+else
+    echo "warning: yr (YARA-X) not found; the malware pattern rules will be off in this build"
+fi
+# Clean My Life brand images and malware rules (SwiftPM resource bundle).
 if [ -d "${BUILD_DIR}/MacClean_MacClean.bundle" ]; then
     cp -R "${BUILD_DIR}/MacClean_MacClean.bundle" "${APP_BUNDLE}/Contents/Resources/"
 fi
@@ -165,6 +174,8 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
     <string>AppIcon</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Similar Photos looks for near-identical shots in your library and adds the extras to an album for you to review. Nothing is deleted from your library.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Browser Tabs reads open tab titles and URLs from Safari, Chrome, Brave and Edge, and closes only the tabs you select.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSUIElement</key>
@@ -247,9 +258,9 @@ cat > "${MENU_APP}/Contents/Info.plist" << MENU_PLIST
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Mac Sai Menu</string>
+    <string>Clean My Life Menu</string>
     <key>CFBundleDisplayName</key>
-    <string>Mac Sai Menu</string>
+    <string>Clean My Life Menu</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -314,6 +325,9 @@ for component in \
     "${MENU_APP}"; do
     codesign "${SIGN_OPTIONS[@]}" "$component"
 done
+for component in "${APP_BUNDLE}/Contents/Helpers/yr"; do
+    [ -f "$component" ] && codesign "${SIGN_OPTIONS[@]}" "$component"
+done
 codesign "${SIGN_OPTIONS[@]}" --entitlements "${ENTITLEMENTS_FILE}" "${APP_BUNDLE}"
 
 # Verify signature
@@ -336,7 +350,7 @@ fi
 # app (Homebrew/DMG installs put a fresh copy in /Applications) verifies
 # OFFLINE. Previously only the DMG was stapled and the app relied on an online
 # Gatekeeper check on first launch; when that check didn't complete, macOS
-# showed "Apple could not verify Mac Sai..." and blocked it. Stapling the app
+# showed "Apple could not verify Clean My Life..." and blocked it. Stapling the app
 # removes that online dependency. This is a separate submission from the DMG
 # below, but it is the only way to ship a DMG that contains a stapled app.
 if [[ "$NOTARIZE" == "true" ]]; then

@@ -28,8 +28,8 @@ final class SupportersListTests: XCTestCase {
         }
     }
 
-    func testMembershipPageIsOnBuyMeACoffee() {
-        XCTAssertEqual(MCConstants.membershipURL.absoluteString, "https://buymeacoffee.com/iliyami/membership")
+    func testMembershipPageIsOnDiscussions() {
+        XCTAssertEqual(MCConstants.membershipURL.absoluteString, "https://github.com/itchyparrot53/clean-my-life/discussions")
     }
 }
 

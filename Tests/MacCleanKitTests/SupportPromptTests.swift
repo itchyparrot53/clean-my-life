@@ -110,6 +110,6 @@ final class SupportPromptTests: XCTestCase {
     }
 
     func testSupportURLIsTheCoffeePage() {
-        XCTAssertEqual(MCConstants.supportURL.absoluteString, "https://buymeacoffee.com/iliyami")
+        XCTAssertEqual(MCConstants.supportURL.absoluteString, "https://github.com/itchyparrot53/clean-my-life/discussions")
     }
 }

@@ -5,7 +5,7 @@ Status: Design (approved, ready for plan)
 
 ## Problem
 
-Developers accumulate large regenerable caches that Mac Sai does not currently
+Developers accumulate large regenerable caches that Clean My Life does not currently
 clean: package-manager caches (npm, Cargo, Gradle, pip, Homebrew) and the caches
 of AI coding tools (Claude, Codex, Antigravity, Cursor). On a real machine these
 run to several GB. There is no grouped place to manage them.

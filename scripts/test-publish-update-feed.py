@@ -21,13 +21,13 @@ import unittest
 SPEC = importlib.util.spec_from_file_location("publish_update_feed", Path(__file__).with_name("publish-update-feed.py"))
 PUBLISH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PUBLISH)
-REPOSITORY = "example/MacSai"
+REPOSITORY = "example/clean-my-life"
 TAG = "v1.28.0"
 ARCHIVE = b"already published archive fixture"
 OLD_FEED = b"previous signed appcast bytes"
 ENVIRONMENT = {"SPARKLE_PRIVATE_KEY": "fixture-only-not-a-real-signing-key",
                "SPARKLE_PUBLIC_ED_KEY": base64.b64encode(bytes(range(32))).decode(),
-               "SPARKLE_FEED_URL": "https://github.com/example/MacSai/releases/latest/download/appcast.xml"}
+               "SPARKLE_FEED_URL": "https://github.com/example/clean-my-life/releases/latest/download/appcast.xml"}
 
 
 def asset(identifier, name, data):
@@ -41,7 +41,7 @@ class FakeGitHub:
         self.data = {1: ARCHIVE, 2: OLD_FEED}
         self.record = {"id": 17, "tag_name": TAG, "draft": False, "prerelease": False,
                        "published_at": "2026-10-28T00:00:00Z", "body": "## Curated improvements\r\n\r\nUser-reviewed notes.\n",
-                       "assets": [asset(1, "MacSai-1.28.0.dmg", ARCHIVE), asset(2, "appcast.xml", OLD_FEED)]}
+                       "assets": [asset(1, "CleanMyLife-1.28.0.dmg", ARCHIVE), asset(2, "appcast.xml", OLD_FEED)]}
         self.latest_tag = TAG
         self.events = []
         self.tamper_candidate = False
@@ -95,7 +95,7 @@ class PublicationTests(unittest.TestCase):
 
     def generator(self, directory, prefix):
         self.github.events.append(("validated",))
-        self.notes_seen = (directory / "MacSai-1.28.0.md").read_bytes()
+        self.notes_seen = (directory / "CleanMyLife-1.28.0.md").read_bytes()
         (directory / "appcast.xml").write_bytes(b"verified signed feed: " + self.notes_seen)
 
     def archive_verifier(self, archive_path, version, environment):
@@ -244,7 +244,7 @@ class ArchiveConfigurationTests(unittest.TestCase):
         self.mode = "valid"
         self.detach_failure = False
         self.mount = None
-        self.outside = tempfile.TemporaryDirectory(prefix="macsai-mount-fixture-")
+        self.outside = tempfile.TemporaryDirectory(prefix="cleanmylife-mount-fixture-")
         self.addCleanup(self.outside.cleanup)
 
     def runner(self, command, **options):
@@ -260,7 +260,7 @@ class ArchiveConfigurationTests(unittest.TestCase):
                 raise subprocess.CalledProcessError(1, command)
             if self.mode == "attach-timeout":
                 raise subprocess.TimeoutExpired(command, 60)
-            app = self.mount / ("Other.app" if self.mode == "wrong-app" else "Mac Sai.app")
+            app = self.mount / ("Other.app" if self.mode == "wrong-app" else "Clean My Life.app")
             contents = app / "Contents"
             if self.mode != "missing-app":
                 contents.mkdir(parents=True)

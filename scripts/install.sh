@@ -1,11 +1,11 @@
 #!/bin/bash
-# One-line installer for Mac Sai.
-# Usage: curl -fsSL https://raw.githubusercontent.com/iliyami/MacSai/main/scripts/install.sh | bash
+# One-line installer for Clean My Life.
+# Usage: curl -fsSL https://raw.githubusercontent.com/itchyparrot53/clean-my-life/main/scripts/install.sh | bash
 
 set -euo pipefail
 
-REPO="iliyami/MacSai"
-APP_NAME="Mac Sai.app"
+REPO="itchyparrot53/clean-my-life"
+APP_NAME="Clean My Life.app"
 INSTALL_DIR="${INSTALL_DIR:-/Applications}"
 
 cyan() { printf "\033[36m%s\033[0m\n" "$1"; }
@@ -15,7 +15,7 @@ red() { printf "\033[31m%s\033[0m\n" "$1"; }
 # Check macOS version
 OS_VERSION=$(sw_vers -productVersion | cut -d. -f1)
 if [ "$OS_VERSION" -lt 14 ]; then
-    red "Mac Sai requires macOS 14 (Sonoma) or later. You have $(sw_vers -productVersion)."
+    red "Clean My Life requires macOS 14 (Sonoma) or later. You have $(sw_vers -productVersion)."
     exit 1
 fi
 
@@ -29,11 +29,11 @@ if [ -z "$DMG_URL" ]; then
     exit 1
 fi
 
-cyan "Downloading Mac Sai $VERSION..."
+cyan "Downloading Clean My Life $VERSION..."
 TMP=$(mktemp -d)
 DMG_PATH="$TMP/macclean.dmg"
 # Mount at a known path: `-quiet` prints nothing to parse, and the volume
-# name ("Mac Sai") contains a space.
+# name ("Clean My Life") contains a space.
 MOUNT="$TMP/mount"
 cleanup() {
     hdiutil detach -quiet "$MOUNT" 2>/dev/null || true
@@ -59,10 +59,12 @@ cyan "Cleaning up..."
 cleanup
 trap - EXIT
 
-# Mac Sai is notarized by Apple, so no quarantine workaround is needed.
+# The 0.1.0 beta is ad-hoc signed, not notarized. Remove the quarantine flag
+# so Gatekeeper does not block the first launch.
+xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP_NAME" 2>/dev/null || true
 
 green ""
-green "✓ Mac Sai $VERSION installed to $INSTALL_DIR/$APP_NAME"
+green "✓ Clean My Life $VERSION installed to $INSTALL_DIR/$APP_NAME"
 green ""
 echo "Launch with: open \"$INSTALL_DIR/$APP_NAME\""
 echo ""

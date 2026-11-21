@@ -267,9 +267,9 @@ enum BrowserExtensionsStrings {
             return fill(builtInText, browser)
         case .refused:
             return L10n.tr(
-                "Mac Sai 无法确认此扩展的文件夹可以安全移除，因此未删除任何内容。",
-                "Mac Sai couldn't confirm this extension's folder is safe to remove, so nothing was deleted.",
-                "Mac Sai не смог подтвердить, что папку расширения безопасно удалить, поэтому ничего не удалено."
+                "Clean My Life 无法确认此扩展的文件夹可以安全移除，因此未删除任何内容。",
+                "Clean My Life couldn't confirm this extension's folder is safe to remove, so nothing was deleted.",
+                "Clean My Life не смог подтвердить, что папку расширения безопасно удалить, поэтому ничего не удалено."
             )
         case .failed(let error):
             return L10n.tr("无法移到废纸篓：", "Couldn't move it to the Trash: ", "Не удалось переместить в Корзину: ") + error

@@ -7,7 +7,7 @@ public enum CleanHistoryRecorder {
     /// suite's real trash cleans never land in the developer's own history.
     nonisolated(unsafe) public static var fileURL: URL = NSClassFromString("XCTestCase") != nil
         ? FileManager.default.temporaryDirectory
-            .appending(path: "macsai-test-clean-history-\(ProcessInfo.processInfo.processIdentifier).json")
+            .appending(path: "cleanmylife-test-clean-history-\(ProcessInfo.processInfo.processIdentifier).json")
         : MCConstants.cleanHistoryFile
     /// Override in tests; the user's Trash in production.
     nonisolated(unsafe) public static var trashRoot: URL = MCConstants.userTrash

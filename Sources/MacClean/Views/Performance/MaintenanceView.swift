@@ -191,7 +191,7 @@ struct MaintenanceView: View {
         if checked.contains(where: { $0.severity == .advanced }) { confirmBatch = true } else { runBatch() }
     }
 
-    /// Sequential, like Mac Sai's safe run, so the admin password is asked once.
+    /// Sequential, like Clean My Life's safe run, so the admin password is asked once.
     private func runBatch() {
         let tasks = MaintenanceTask.allCases.filter(checked.contains)
         Task {

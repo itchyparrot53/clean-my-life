@@ -1,6 +1,6 @@
 import Foundation
 
-/// When the post-clean "support Mac Sai" card may appear. It is deliberately
+/// When the post-clean "support Clean My Life" card may appear. It is deliberately
 /// rare so it never turns into a nag screen: only after a clean that freed a
 /// real amount of space, never on the very first clean (the user is still
 /// deciding whether to trust the app), at most once per cooldown window, and

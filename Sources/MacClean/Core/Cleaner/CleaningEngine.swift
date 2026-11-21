@@ -30,7 +30,7 @@ public actor CleaningEngine {
         public let skippedCount: Int
         /// Items actually moved to the Trash (empty for dry-run / permanent).
         public let trashedItems: [TrashedItem]
-        /// Cancellation in MacSai or in the system's authorization dialog.
+        /// Cancellation in CleanMyLife or in the system's authorization dialog.
         public let wasCancelled: Bool
 
         public init(
