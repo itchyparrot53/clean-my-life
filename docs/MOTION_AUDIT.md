@@ -28,7 +28,7 @@ where it lives and what happens when **Reduce Motion** is on.
 | A21 | Sunburst zoom | `SpaceLensView` drops the zoom |
 | A22 | Sunburst growth | Grows without sweep |
 | A23 | `ShredConfetti` | Not rendered |
-| A24 | Menu bar sparklines | `TimelineView` pauses when the window is not key |
+| A24 | Menu bar sparklines | `TimelineView` (system-managed) |
 | A25 | Screen Cleaning countdown | Countdown is functional; ring still trims |
 | A26 | Toast | Slides become fade |
 | A27 | Widget expand | Expand stays; it is a navigation change |
@@ -42,9 +42,7 @@ where it lives and what happens when **Reduce Motion** is on.
 
 ## Performance
 
-- Hero sweep and radar use `TimelineView(.animation(minimumInterval: 1/30, paused:))`
-  and pause whenever the window is not key.
-- Menu-bar sparklines pause with the same rule.
+- Hero sweep and radar are only rendered when Reduce Motion is off.
 - Hash progress and Similar Photos progress pass through `ProgressThrottle`
   (10 Hz).
 - Remaining: an Instruments session on the release build.

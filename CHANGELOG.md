@@ -58,8 +58,7 @@ The first public beta of the Clean My Life fork.
 ### Changed
 
 - Phase 11 polish: Reduce Motion stops the onboarding switch, status dot, hero
-  sweep/radar, numeric rolls, stagger, sheet and fly-to-button; the hero loops
-  pause when the window is inactive.
+  sweep/radar, numeric rolls, stagger, sheet and fly-to-button.
 - The ten brand-kit module illustrations replace the SF Symbol hero
   placeholders, with the symbol as a safe fallback.
 - White text now sits on a 16 % scrim, measured at 4.5:1 or better on every
