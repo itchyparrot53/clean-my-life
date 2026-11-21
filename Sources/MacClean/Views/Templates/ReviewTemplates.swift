@@ -304,7 +304,9 @@ private struct ReviewSheetModifier<Sheet: View>: ViewModifier {
                     .sidebarMode(.dimmed)
                 }
             }
-            .animation(.spring(response: 0.45, dampingFraction: 0.88), value: isPresented)
+            .animation(reduceMotion ? .easeInOut(duration: 0.2)
+                                    : .spring(response: 0.45, dampingFraction: 0.88),
+                       value: isPresented)
     }
 }
 

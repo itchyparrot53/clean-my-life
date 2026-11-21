@@ -154,6 +154,8 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
     <string>MacClean</string>
     <key>CFBundleIdentifier</key>
     <string>${BUNDLE_ID}</string>
+    <key>CMTeamIdentifier</key>
+    <string>${TEAM_IDENTIFIER:-H3XLS95QV4}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

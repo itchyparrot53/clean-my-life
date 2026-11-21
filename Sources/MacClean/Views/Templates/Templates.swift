@@ -74,6 +74,7 @@ struct StaggerIn: ViewModifier {
             .opacity(shown ? 1 : 0)
             .offset(y: shown || reduceMotion ? 0 : 14)
             .onAppear {
+                guard !reduceMotion else { shown = true; return }
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.85).delay(0.035 * Double(min(index, 10)))) {
                     shown = true
                 }
@@ -99,6 +100,7 @@ struct TemplateHero: View {
 
     let palette: ModulePalette
     let symbol: String
+    var illustration: String? = nil
     var motion: Motion = .still
     var diameter: CGFloat
     @Environment(\.templateNamespace) private var namespace
@@ -106,7 +108,7 @@ struct TemplateHero: View {
     @State private var phase = false
 
     var body: some View {
-        HeroDisc(palette: palette, symbol: symbol, diameter: diameter)
+        HeroDisc(palette: palette, symbol: symbol, illustration: illustration, diameter: diameter)
             .overlay {
                 if motion == .scanning && !reduceMotion {
                     ScanSweep(diameter: diameter)
@@ -267,7 +269,7 @@ struct IntroTemplate<Control: View>: View {
     var body: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, diameter: space.heroDiameter)
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, illustration: intro.artName, diameter: space.heroDiameter)
                     .position(space.heroCenter)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -338,7 +340,7 @@ struct ScanningTemplate: View {
     var body: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, motion: heroMotion,
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, illustration: intro.artName, motion: heroMotion,
                              diameter: space.heroDiameter)
                     .position(space.heroCenter)
 
@@ -428,7 +430,7 @@ struct ResultsTemplate: View {
     var body: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, diameter: space.heroDiameter)
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, illustration: intro.artName, diameter: space.heroDiameter)
                     .position(space.heroCenter)
 
                 VStack(alignment: .leading, spacing: 0) {
@@ -529,7 +531,7 @@ struct VerdictTemplate: View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
                 // A32: the hero slides left and grows, tucking behind the sidebar.
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, diameter: space.heroDiameter)
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, illustration: intro.artName, diameter: space.heroDiameter)
                     .scaleEffect((shifted ? 1.25 : 1) * (pulse ? 1.04 : 1))
                     .position(shifted ? CGPoint(x: space.x(0.30), y: space.heroCenter.y) : space.heroCenter)
 
@@ -685,7 +687,7 @@ struct EmptyTemplate: View {
     var body: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: palette, symbol: intro.heroSymbol, motion: .floating,
+                TemplateHero(palette: palette, symbol: intro.heroSymbol, illustration: intro.artName, motion: .floating,
                              diameter: space.heroDiameter)
                     .position(space.heroCenter)
                 VStack(alignment: .leading, spacing: 8) {

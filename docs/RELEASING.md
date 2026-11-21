@@ -62,9 +62,16 @@ and notarizes both the app and the DMG. Required secrets:
 | `ASC_ISSUER_ID` | App Store Connect issuer ID |
 | `ASC_KEY_P8_BASE64` | The `.p8` key, base64 encoded |
 
-Also replace `MCConstants.teamIdentifier` and the XPC requirement with your own
-team before shipping a signed helper build. The current value belongs to
-the upstream project.
+Set your team in the build environment as well:
+
+```bash
+TEAM_IDENTIFIER=YOURTEAMID bash scripts/build-dmg.sh --notarize
+```
+
+The build stamps it into the app's `CMTeamIdentifier`; `MCConstants.teamIdentifier`
+reads that value and the helper's XPC requirement follows it. The fallback is
+the upstream team, so a signed build with a different team must set this or the
+helper will refuse the connection.
 
 For the 0.1.0 beta, signing was not configured. The workflow falls back to an
 ad-hoc build and the GitHub release is marked as a pre-release.

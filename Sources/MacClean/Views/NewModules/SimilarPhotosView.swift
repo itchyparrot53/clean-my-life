@@ -69,9 +69,11 @@ struct SimilarPhotosView: View {
         clusters = []
         selectedItems = []
         let scanner = SimilarPhotosScanner(includeLibrary: includeLibrary)
+        let throttle = ProgressThrottle()
         Task {
             let found = await Task.detached(priority: .userInitiated) {
                 await scanner.scan { progress in
+                    guard throttle.ready() else { return }
                     Task { @MainActor in
                         scanProgress = max(scanProgress, progress.fraction)
                         scanPhase = progress.phase

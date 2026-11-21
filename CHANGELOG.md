@@ -57,6 +57,20 @@ The first public beta of the Clean My Life fork.
 
 ### Changed
 
+- Phase 11 polish: Reduce Motion stops the onboarding switch, status dot, hero
+  sweep/radar, numeric rolls, stagger, sheet and fly-to-button; the hero loops
+  pause when the window is inactive.
+- The ten brand-kit module illustrations replace the SF Symbol hero
+  placeholders, with the symbol as a safe fallback.
+- White text now sits on a 16 % scrim, measured at 4.5:1 or better on every
+  module gradient.
+- VoiceOver announces scan progress at 25 % steps and labels the Browser Tabs
+  rows, filters and actions.
+- A debug-only preview gallery and the keyboard shortcut table in the README
+  and site.
+- `TEAM_IDENTIFIER` is stamped into `CMTeamIdentifier` at build time; the
+  helper's XPC requirement follows it, so a fork can sign with its own team
+  without editing source.
 - The malware table now reads "Apple XProtect rule", "Elastic Security rule",
   "Starts with your Mac" and "Browser extension" alongside the older sources.
 - Pattern rules also run on new files in the real-time monitor.

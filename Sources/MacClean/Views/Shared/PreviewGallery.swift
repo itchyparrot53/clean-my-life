@@ -42,7 +42,7 @@ import SwiftUI
                 .font(TypeScale.introSubtitle)
                 .foregroundStyle(TypeScale.secondaryText)
         }
-        TemplateHero(palette: .protection, symbol: "ladybug", motion: .scanning, diameter: 220)
+        TemplateHero(palette: .protection, symbol: "ladybug", illustration: "Protection", motion: .scanning, diameter: 220)
     }
     .padding(40)
     .background(LinearGradient(colors: [ModulePalette.protection.top, ModulePalette.protection.bottom],

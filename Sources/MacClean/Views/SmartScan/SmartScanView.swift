@@ -265,7 +265,7 @@ struct SmartScanView: View {
     private var idleView: some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", diameter: 0.35 * space.W)
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", illustration: "Checkup", diameter: 0.35 * space.W)
                     .position(x: space.x(0.5), y: space.y(0.38))
                 VStack(spacing: 8) {
                     Text("Ready when you are")
@@ -291,7 +291,7 @@ struct SmartScanView: View {
     private func scanningView(phase: String, progress: Double, filesFound: Int, sizeFound: UInt64) -> some View {
         CardSpaceReader { space in
             ZStack(alignment: .topLeading) {
-                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", motion: .scanning,
+                TemplateHero(palette: .checkup, symbol: "sparkle.magnifyingglass", illustration: "Checkup", motion: .scanning,
                              diameter: 0.25 * space.W)
                     .position(x: space.x(0.5), y: space.y(0.28))
                 VStack(spacing: 6) {

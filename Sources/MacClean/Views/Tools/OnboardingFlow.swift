@@ -79,7 +79,7 @@ struct OnboardingFlow: View {
                     .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
                     .accessibilityLabel(MCConstants.appName)
             } else {
-                TemplateHero(palette: .checkup, symbol: "sparkles", motion: .floating, diameter: size)
+                TemplateHero(palette: .checkup, symbol: "sparkles", illustration: "Checkup", motion: .floating, diameter: size)
             }
         }
     }

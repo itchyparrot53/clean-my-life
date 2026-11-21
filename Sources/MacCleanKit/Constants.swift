@@ -21,7 +21,18 @@ public enum MCConstants {
     /// root RPCs — a local privilege escalation. Pinning the Apple anchor and
     /// this Team ID closes that, because an attacker cannot obtain a Developer
     /// ID certificate issued to our team.
-    public static let teamIdentifier = "H3XLS95QV4"
+    /// A fork can set `CMTeamIdentifier` in its Info.plist at build time
+    /// (`TEAM_IDENTIFIER=... scripts/build-dmg.sh`) instead of editing this
+    /// file. The fallback keeps local upstream builds working; signing a
+    /// release with a different team without setting it makes the helper
+    /// refuse the connection, which is the safe failure.
+    public static var teamIdentifier: String {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "CMTeamIdentifier") as? String,
+           !value.isEmpty {
+            return value
+        }
+        return "H3XLS95QV4"
+    }
 
     /// Code-signing requirement a connecting XPC peer must satisfy, used by
     /// both the helper listener (validating callers) and the client connection

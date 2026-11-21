@@ -182,12 +182,22 @@ extension View {
             .environment(\.colorScheme, .dark)
     }
 
-    /// A4: sizes and counts roll digit by digit when they change.
+    /// A4: sizes and counts roll digit by digit when they change. Reduce
+    /// Motion swaps the number without rolling.
     func numericRoll<V: Equatable>(_ value: V) -> some View {
-        self
+        modifier(NumericRoll(value: value))
+    }
+}
+
+private struct NumericRoll<V: Equatable>: ViewModifier {
+    let value: V
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
             .monospacedDigit()
-            .contentTransition(.numericText())
-            .animation(.snappy, value: value)
+            .contentTransition(reduceMotion ? .identity : .numericText())
+            .animation(reduceMotion ? nil : .snappy, value: value)
     }
 }
 
@@ -266,6 +276,7 @@ struct CategoryTile: View {
 struct HeroDisc: View {
     let palette: ModulePalette
     let symbol: String
+    var illustration: String? = nil
     var diameter: CGFloat = CardLayout.heroDiameter
 
     var body: some View {
@@ -285,13 +296,24 @@ struct HeroDisc: View {
             Circle()
                 .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
 
-            // An empty symbol leaves the disc bare (for overlays like the drawn check).
-            Image(systemName: symbol.isEmpty ? "circle" : symbol)
-                .opacity(symbol.isEmpty ? 0 : 1)
-                .font(.system(size: diameter * 0.58, weight: .regular))
-                .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)],
-                                                startPoint: .top, endPoint: .bottom))
-                .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+            if let illustration, let art = BrandAssets.image("Art_\(illustration)") {
+                // Brand-kit illustration (Phase 11 §2.5). Knocked out in white
+                // so it reads on every module gradient.
+                Image(nsImage: art)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: diameter * 0.56, height: diameter * 0.56)
+                    .opacity(0.96)
+                    .shadow(color: .black.opacity(0.22), radius: 12, y: 8)
+            } else {
+                // An empty symbol leaves the disc bare (for overlays like the drawn check).
+                Image(systemName: symbol.isEmpty ? "circle" : symbol)
+                    .opacity(symbol.isEmpty ? 0 : 1)
+                    .font(.system(size: diameter * 0.58, weight: .regular))
+                    .foregroundStyle(LinearGradient(colors: [.white, .white.opacity(0.75)],
+                                                    startPoint: .top, endPoint: .bottom))
+                    .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+            }
         }
         .frame(width: diameter, height: diameter)
         .accessibilityHidden(true)
