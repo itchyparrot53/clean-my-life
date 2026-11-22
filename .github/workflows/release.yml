@@ -180,7 +180,7 @@ jobs:
           ### Requirements
           - macOS 14 Sonoma or later
           - Full Disk Access for Mail, Privacy and parts of the malware scan
-          - YARA-X is optional: \`brew install yara-x\` enables the pattern-rule pass
+          - YARA-X is bundled in the app; \`brew install yara-x\` is a fallback
 
           ### Safety
           Trash-first deletion, a protected-path guard, and every flagged item carries a reason. Only Apple XProtect signatures are pre-selected.
@@ -198,7 +198,7 @@ jobs:
           ### Requirements
           - macOS 14 Sonoma or later
           - Full Disk Access for complete scan results
-          - YARA-X is optional: \`brew install yara-x\`
+          - YARA-X is bundled in the app; \`brew install yara-x\` is a fallback
 
           ### Safety
           Trash-first deletion, a protected-path guard, and every flagged item carries a reason.
